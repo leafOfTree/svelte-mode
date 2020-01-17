@@ -28,7 +28,7 @@ Emacs major mode for `.svelte` files. Based on [mhtml-mode][0].
   `M-x` `package-install` [RET] `svelte-mode` [RET]
 -->
   
-Svelte-mode should be enabled for `.svelte` files if everything goes well. Please stay up to date. Feel free to open an issue or a pull request.
+Svelte-mode should be auto enabled for `.svelte` files if everything goes well. Please stay up to date. Feel free to open an issue or a pull request.
 
 
 ## How it works
