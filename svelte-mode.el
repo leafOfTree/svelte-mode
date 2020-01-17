@@ -471,6 +471,23 @@ This is used by `svelte--pre-command'.")
 
 (add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
 
+;;; Emmet mode
+(defun emmet-detect-style-tag-and-attr-advice (origin-fun &rest args)
+  (message "Detect style tag begin as `<style'.")
+  (let* ((style-attr-end "[^=][\"']")
+	 (style-attr-begin "style=[\"']")
+	 (style-tag-end "</style>")
+	 (style-tag-begin "<style"))
+    (and emmet-use-style-tag-and-attr-detection
+	 (or
+	  (emmet-check-if-between style-attr-begin style-attr-end) ; style attr
+	  (emmet-check-if-between style-tag-begin style-tag-end))))) ; style tag
+
+(advice-add
+ 'emmet-detect-style-tag-and-attr
+ :around
+ #'emmet-detect-style-tag-and-attr-advice)
+
 ;;; Flyspell
 (declare-function flyspell-generic-progmode-verify "flyspell")
 
