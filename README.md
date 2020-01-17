@@ -6,7 +6,7 @@
 </a>
 </p>
 
-Emacs major mode for '.svelte' files. Based on [mhtml-mode][0].
+Emacs major mode for `.svelte` files. Based on [mhtml-mode][0].
 
 ## Installation
 
@@ -17,6 +17,7 @@ Emacs major mode for '.svelte' files. Based on [mhtml-mode][0].
   ```
 
   ```lisp
+  ; .emacs
   (add-to-list 'load-path "/path/to/svelte-mode")
   (require 'svelte-mode)
   ```
@@ -40,7 +41,7 @@ Supports
 
 ### Todo
 
-- Preprocess languages
+- Preprocess languages TypeScript/CoffeeScript/Pug.
 - Context based emmet-mode support.
 
 ## Customize
