@@ -38,11 +38,11 @@ This major mode includes `JavaScript/CSS` as `submode` in `html-mode`.
 Supports
 
 - Svelte directives and blocks.
+- emmet-mode HTML/CSS detection.
 
 ### Todo
 
 - Preprocess languages TypeScript/CoffeeScript/Pug.
-- Context based emmet-mode support.
 
 ## Customize
 
