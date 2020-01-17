@@ -1,6 +1,8 @@
 ;;; svelte-mode.el --- HTML editing mode that handles CSS and JS -*- lexical-binding:t -*-
 
 ;; This file is not part of GNU Emacs.
+;; You can redistribute it and/or modify it under the terms of
+;; the GNU Lesser General Public License v3.0.
 
 ;;; Code:
 (eval-when-compile (require 'cl-lib))
@@ -466,6 +468,8 @@ This is used by `svelte--pre-command'.")
 	    (font-lock-add-keywords
 	     nil
 	     svelte--font-lock-html-keywords)))
+
+(add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
 
 ;;; Flyspell
 (declare-function flyspell-generic-progmode-verify "flyspell")
