@@ -53,7 +53,9 @@ code();
   ;; Other captured local variables; these are not set when entering a
   ;; region but let-bound during certain operations, e.g.,
   ;; indentation.
-  captured-locals)
+  captured-locals
+  (excluded-locals ()
+   :documentation "Local variables that are not to be captured."))
 
 (defconst svelte--crucial-variable-prefix
   (regexp-opt '("comment-" "uncomment-" "electric-indent-"
@@ -79,11 +81,13 @@ code();
         (setq-local font-lock-fontify-region-function
                     #'font-lock-default-fontify-region))
       (dolist (iter (buffer-local-variables))
-        (when (string-match svelte--crucial-variable-prefix
+	(when (string-match svelte--crucial-variable-prefix
                             (symbol-name (car iter)))
           (push iter crucial-captured-locals))
         (when (string-match svelte--variable-prefix (symbol-name (car iter)))
-          (push iter captured-locals)))
+	  (unless (member (car iter)
+			  (svelte--submode-excluded-locals submode))
+	    (push iter captured-locals))))
       (setf (svelte--submode-crucial-captured-locals submode)
             crucial-captured-locals)
       (setf (svelte--submode-captured-locals submode) captured-locals))
@@ -123,10 +127,10 @@ code();
        (when ,submode (mapcar #'car (svelte--submode-captured-locals ,submode)))
        (when ,submode (mapcar #'cdr (svelte--submode-captured-locals ,submode)))
      (cl-progv
-         (when ,submode (mapcar #'car (svelte--submode-crucial-captured-locals
-                                       ,submode)))
-         (when ,submode (mapcar #'cdr (svelte--submode-crucial-captured-locals
-                                       ,submode)))
+	 (when ,submode (mapcar #'car (svelte--submode-crucial-captured-locals
+				       ,submode)))
+	 (when ,submode (mapcar #'cdr (svelte--submode-crucial-captured-locals
+				       ,submode)))
        ,@body)))
 
 (defun svelte--submode-lighter ()
@@ -267,7 +271,8 @@ This is used by `svelte--pre-command'.")
                              ;; more like the sub-mode and don't
                              ;; override minor mode maps.
                              'local-map (svelte--submode-keymap submode)))
-  (funcall (svelte--submode-propertize submode) (point) end)
+  (when (svelte--submode-propertize submode)
+    (funcall (svelte--submode-propertize submode) (point) end))
   (goto-char end))
 
 (defvar svelte--syntax-propertize
@@ -284,6 +289,16 @@ This is used by `svelte--pre-command'.")
         ;; Don't apply in a comment.
         (unless (syntax-ppss-context (syntax-ppss))
           (svelte--syntax-propertize-submode svelte--js-submode end)))))
+   ("<template.*>"
+    (0 (ignore
+        (goto-char (match-end 0))
+	;; (forward-line)
+        ;; Don't apply in a comment.
+        (unless (syntax-ppss-context (syntax-ppss))
+	  (unless (boundp 'svelte--pug-submode)
+	    (load-pug-submode))
+          (svelte--syntax-propertize-submode svelte--pug-submode end)
+	  ))))
    sgml-syntax-propertize-rules))
 
 (defun svelte-syntax-propertize (start end)
@@ -378,7 +393,6 @@ This is used by `svelte--pre-command'.")
 		       "^[\t ]*<\\w+")
 		      ((equal type "end")
 		       "^[\t ]*</\\w+"))))
-    (message "tag-re: %s" tag-re)
     (when tag-re
       (save-excursion
 	(end-of-line)
@@ -471,9 +485,39 @@ This is used by `svelte--pre-command'.")
 
 (add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
 
+;;; Pug mode
+(defun load-pug-submode ()
+  (require 'pug-mode nil t)
+  (setq pug-tab-width sgml-basic-offset)
+
+  (defconst svelte--pug-submode
+    (svelte--construct-submode 'pug-mode
+			       :name "Pug"
+			       :end-tag "</template>"
+			       :syntax-table pug-mode-syntax-table
+			       :excluded-locals '(font-lock-extend-region-functions)
+			       :keymap pug-mode-map))
+
+  (defun pug-compute-indentation-addvice (origin-fun &rest args)
+    "Calculate the maximum sensible indentation for the current line."
+    (save-excursion
+      (beginning-of-line)
+      (if (bobp) 0
+	(pug-forward-through-whitespace t)
+	(+ (current-indentation)
+	   ;; TODO Add parameter-wise indentation
+	   (or (funcall pug-indent-function)
+	       (car prog-indentation-context)
+	       0)))))
+  (advice-add 'pug-compute-indentation :around #'pug-compute-indentation-addvice)
+  
+  (svelte--mark-buffer-locals svelte--pug-submode)
+  (svelte--mark-crucial-buffer-locals svelte--pug-submode)
+  (setq svelte--crucial-variables (delete-dups svelte--crucial-variables)))
+
 ;;; Emmet mode
 (defun emmet-detect-style-tag-and-attr-advice (origin-fun &rest args)
-  (message "Detect style tag begin as `<style'.")
+  "Detect style tag begin as `<style'."
   (let* ((style-attr-end "[^=][\"']")
 	 (style-attr-begin "style=[\"']")
 	 (style-tag-end "</style>")
