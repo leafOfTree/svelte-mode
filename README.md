@@ -39,11 +39,14 @@ Supports
 
 - Svelte directives and blocks.
 - Emmet-mode HTML/CSS detection.
-- Pug-mode in `<template lang="pug">...</template>`
+- Pug-mode in `<template lang="pug">...</template>`.
+- Coffee-mode in `<script lang="coffee">...</script>`.
+
+> Relative modes need to be installed.
 
 ### Todo
 
-- Preprocess languages TypeScript/CoffeeScript/Pug.
+- Preprocess languages: TypeScript.
 
 ## Customize
 
