@@ -277,6 +277,22 @@ This is used by `svelte--pre-command'.")
 
 (defvar svelte--syntax-propertize
   (syntax-propertize-rules
+   ("<template.*pug.*>"
+    (0 (ignore
+        (goto-char (match-end 0))
+        ;; Don't apply in a comment.
+        (unless (syntax-ppss-context (syntax-ppss))
+	  (unless (boundp 'svelte--pug-submode)
+	    (load-pug-submode))
+          (svelte--syntax-propertize-submode svelte--pug-submode end)))))
+   ("<script.*coffee.*>"
+    (0 (ignore
+	(goto-char (match-end 0))
+	;; Don't apply in a comment.
+	(unless (syntax-ppss-context (syntax-ppss))
+	  (unless (boundp 'svelte--coffee-submode)
+	    (load-coffee-submode))
+	  (svelte--syntax-propertize-submode svelte--coffee-submode end)))))
    ("<style.*?>"
     (0 (ignore
         (goto-char (match-end 0))
@@ -289,16 +305,6 @@ This is used by `svelte--pre-command'.")
         ;; Don't apply in a comment.
         (unless (syntax-ppss-context (syntax-ppss))
           (svelte--syntax-propertize-submode svelte--js-submode end)))))
-   ("<template.*>"
-    (0 (ignore
-        (goto-char (match-end 0))
-	;; (forward-line)
-        ;; Don't apply in a comment.
-        (unless (syntax-ppss-context (syntax-ppss))
-	  (unless (boundp 'svelte--pug-submode)
-	    (load-pug-submode))
-          (svelte--syntax-propertize-submode svelte--pug-submode end)
-	  ))))
    sgml-syntax-propertize-rules))
 
 (defun svelte-syntax-propertize (start end)
@@ -483,10 +489,9 @@ This is used by `svelte--pre-command'.")
 	     nil
 	     svelte--font-lock-html-keywords)))
 
-(add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
-
 ;;; Pug mode
 (defun load-pug-submode ()
+  "Load pug-mode and patch it."
   (require 'pug-mode nil t)
   (setq pug-tab-width sgml-basic-offset)
 
@@ -515,6 +520,19 @@ This is used by `svelte--pre-command'.")
   (svelte--mark-crucial-buffer-locals svelte--pug-submode)
   (setq svelte--crucial-variables (delete-dups svelte--crucial-variables)))
 
+;;; Coffee mode
+(defun load-coffee-submode ()
+  "Load coffee-mode and patch it."
+  (require 'coffee-mode nil t)
+  (setq coffee-tab-with sgml-basic-offset)
+
+  (defconst svelte--coffee-submode
+    (svelte--construct-submode 'coffee-mode
+			       :name "Coffee"
+			       :end-tag "</script>"
+			       :syntax-table coffee-mode-syntax-table
+			       :keymap coffee-mode-map)))
+
 ;;; Emmet mode
 (defun emmet-detect-style-tag-and-attr-advice (origin-fun &rest args)
   "Detect style tag begin as `<style'."
@@ -540,7 +558,6 @@ This is used by `svelte--pre-command'.")
     (if submode
         (flyspell-generic-progmode-verify)
       t)))
-
 
 ;;;###autoload
 (define-derived-mode svelte-mode html-mode
@@ -578,6 +595,7 @@ the rules from `css-mode'."
 
 (put 'svelte-mode 'flyspell-mode-predicate #'svelte--flyspell-check-word)
 
+(add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
 (provide 'svelte-mode)
 
 ;;; svelte-mode.el ends here
