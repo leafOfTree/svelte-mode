@@ -38,7 +38,8 @@ This major mode includes `JavaScript/CSS` as `submode` in `html-mode`.
 Supports
 
 - Svelte directives and blocks.
-- emmet-mode HTML/CSS detection.
+- Emmet-mode HTML/CSS detection.
+- Pug-mode in `<template lang="pug">...</template>`
 
 ### Todo
 
@@ -51,6 +52,7 @@ See detail by `M-x` `describe-variable` [RET] `<variable-name>` [RET]
 | name   | description |
 |--------|-------------|
 | svelte-tag-relative-indent | How `<script>` and `<style>` bodies are indented relative to the tag. |
+| sgml-basic-offset | Specifies the basic indentation level. |
 
 
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el
