@@ -6,12 +6,11 @@
 ;; Keywords: wp languages
 ;; Homepage: https://github.com/leafOfTree/svelte-mode
 ;; Version: 1.0.0
-;; Package-Version: 20200121.1
+;; Package-Version: 20200121.100
 ;; Package-Requires: ((emacs "26.1"))
 ;; Credits: mhtml-mode
 
 ;; This file is NOT part of GNU Emacs.
-
 ;; You can redistribute it and/or modify it under the terms of
 ;; the GNU Lesser General Public License v3.0.
 
@@ -154,7 +153,8 @@ code();
 (defvar emmet-use-style-tag-and-attr-detection)
 (declare-function emmet-check-if-between "emmet-mode")
 (declare-function pug-forward-through-whitespace "pug-mode")
-(declare-function pug-compute-indentation-advice "svelte-mode")
+(declare-function svelte--pug-compute-indentation-advice
+		  "svelte-mode")
 
 (defmacro svelte--with-locals (submode &rest body)
   "Bind SUBMODE local variables and then run BODY."
