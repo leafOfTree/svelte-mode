@@ -615,7 +615,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 
 ;;;###autoload
 (define-derived-mode svelte-mode html-mode
-  '(("Svelte/") (:eval (or (svelte--submode-lighter) "HTML")))
+  '(("Svelte-") (:eval (or (svelte--submode-lighter) "HTML")))
   "Major mode based on `html-mode', but works with embedded JS and CSS.
 
 Code inside a <script> element is indented using the rules from
