@@ -1,11 +1,13 @@
 ;;; svelte-mode.el --- Emacs major mode for Svelte -*- lexical-binding:t -*-
-
 ;; Copyright (C) 2020 Leaf.
 
 ;; Author: Leaf <leafvocation@gmail.com>
-;; Created: 20 Jan 2020
+;; Created: 21 Jan 2020
 ;; Keywords: wp languages
 ;; Homepage: https://github.com/leafOfTree/svelte-mode
+;; Version: 1.0.0
+;; Package-Version: 20200121.1
+;; Package-Requires: ((emacs "26.1"))
 ;; Credits: mhtml-mode
 
 ;; This file is NOT part of GNU Emacs.
@@ -239,7 +241,7 @@ This is used by `svelte--pre-command'.")
         ;; Don't apply in a comment.
         (unless (syntax-ppss-context (syntax-ppss))
 	  (unless (boundp 'svelte--pug-submode)
-	    (load-pug-submode))
+	    (svelte--load-pug-submode))
           (svelte--syntax-propertize-submode svelte--pug-submode end)))))
    ("<script.*coffee.*>"
     (0 (ignore
@@ -247,7 +249,7 @@ This is used by `svelte--pre-command'.")
 	;; Don't apply in a comment.
 	(unless (syntax-ppss-context (syntax-ppss))
 	  (unless (boundp 'svelte--coffee-submode)
-	    (load-coffee-submode))
+	    (svelte--load-coffee-submode))
 	  (svelte--syntax-propertize-submode svelte--coffee-submode end)))))
    ("<style.*?>"
     (0 (ignore
@@ -310,8 +312,7 @@ This is used by `svelte--pre-command'.")
                 ;; svelte--with-locals.
                 (funcall indent-line-function)))))
       ;; HTML.
-      (svelte-html-indent-line)
-      )))
+      (svelte-html-indent-line))))
 
 (defun svelte-html-indent-line ()
   "Indent HTML within Svelte."
@@ -537,7 +538,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 	     svelte--font-lock-html-keywords)))
 
 ;;; Pug mode
-(defun load-pug-submode ()
+(defun svelte--load-pug-submode ()
   "Load `pug-mode' and patch it."
   (require 'pug-mode nil t)
   (setq pug-tab-width sgml-basic-offset)
@@ -551,7 +552,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 			       '(font-lock-extend-region-functions)
 			       :keymap pug-mode-map))
 
-  (defun pug-compute-indentation-advice ()
+  (defun svelte--pug-compute-indentation-advice ()
     "Calculate the maximum sensible indentation for the current line."
     (save-excursion
       (beginning-of-line)
@@ -565,14 +566,14 @@ If LOUDLY is non-nil, print status message while fontifying."
 
   (advice-add 'pug-compute-indentation
 	      :around
-	      #'pug-compute-indentation-advice)
+	      #'svelte--pug-compute-indentation-advice)
   
   (svelte--mark-buffer-locals svelte--pug-submode)
   (svelte--mark-crucial-buffer-locals svelte--pug-submode)
   (setq svelte--crucial-variables (delete-dups svelte--crucial-variables)))
 
 ;;; Coffee mode
-(defun load-coffee-submode ()
+(defun svelte--load-coffee-submode ()
   "Load `coffee-mode' and patch it."
   (require 'coffee-mode nil t)
   (setq coffee-tab-with sgml-basic-offset)
@@ -585,7 +586,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 			       :keymap coffee-mode-map)))
 
 ;;; Emmet mode
-(defun emmet-detect-style-tag-and-attr-advice ()
+(defun svelte--emmet-detect-style-tag-and-attr-advice ()
   "Detect style tag begin as `<style'."
   (let* ((style-attr-end "[^=][\"']")
 	 (style-attr-begin "style=[\"']")
@@ -600,7 +601,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 (advice-add
  'emmet-detect-style-tag-and-attr
  :around
- #'emmet-detect-style-tag-and-attr-advice)
+ #'svelte--emmet-detect-style-tag-and-attr-advice)
 
 ;;; Flyspell
 (declare-function flyspell-generic-progmode-verify "flyspell")
