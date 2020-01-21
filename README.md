@@ -6,7 +6,7 @@
 </a>
 </p>
 
-Emacs major mode for `.svelte` files. Based on [mhtml-mode][0].
+Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It depends on `(emacs "26.1")`.
 
 ## Installation
 
@@ -33,7 +33,7 @@ Svelte-mode should be auto enabled for `.svelte` files if everything goes well. 
 
 ## How it works
 
-This major mode includes `JavaScript/CSS` as `submode` in `html-mode`.
+This major mode includes `JavaScript/CSS` as `submode` in `html-mode`. 
 
 Supports
 
@@ -43,10 +43,6 @@ Supports
 - Coffee-mode in `<script lang="coffee">...</script>`.
 
 > Relative modes need to be installed.
-
-### Todo
-
-- Preprocess languages: TypeScript.
 
 ## Customize
 
