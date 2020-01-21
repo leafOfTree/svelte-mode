@@ -1,8 +1,22 @@
-;;; svelte-mode.el --- HTML editing mode that handles CSS and JS -*- lexical-binding:t -*-
+;;; svelte-mode.el --- Emacs major mode for Svelte -*- lexical-binding:t -*-
 
-;; This file is not part of GNU Emacs.
+;; Copyright (C) 2020 Leaf.
+
+;; Author: Leaf <leafvocation@gmail.com>
+;; Created: 20 Jan 2020
+;; Keywords: wp languages
+;; Homepage: https://github.com/leafOfTree/svelte-mode
+;; Credits: mhtml-mode
+
+;; This file is NOT part of GNU Emacs.
+
 ;; You can redistribute it and/or modify it under the terms of
 ;; the GNU Lesser General Public License v3.0.
+
+;;; Commentary:
+
+;; This major mode includes JavaScript/CSS and other language modes
+;; as submode in html-mode.
 
 ;;; Code:
 (eval-when-compile (require 'cl-lib))
@@ -38,24 +52,19 @@ code();
   :version "26.1")
 
 (cl-defstruct svelte--submode
-  ;; Name of this submode.
-  name
-  ;; HTML end tag.
-  end-tag
-  ;; Syntax table.
-  syntax-table
-  ;; Propertize function.
-  propertize
-  ;; Keymap.
-  keymap
+  name 			; Name of this submode.
+  end-tag 		; HTML end tag.
+  syntax-table          ; Syntax table.
+  propertize            ; Propertize function.
+  keymap                ; Keymap.
   ;; Captured locals that are set when entering a region.
   crucial-captured-locals
   ;; Other captured local variables; these are not set when entering a
   ;; region but let-bound during certain operations, e.g.,
   ;; indentation.
   captured-locals
-  (excluded-locals ()
-   :documentation "Local variables that are not to be captured."))
+  (excluded-locals
+   () :documentation "Local variables that are not to be captured."))
 
 (defconst svelte--crucial-variable-prefix
   (regexp-opt '("comment-" "uncomment-" "electric-indent-"
@@ -67,7 +76,7 @@ code();
   "Regexp matching the prefix of buffer-locals we want to capture.")
 
 (defun svelte--construct-submode (mode &rest args)
-  "A wrapper for make-svelte--submode that computes the buffer-local variables."
+  "Computes the buffer-local variables in submode MODE with ARGS passed to it."
   (let ((captured-locals nil)
         (crucial-captured-locals nil)
         (submode (apply #'make-svelte--submode args)))
@@ -94,6 +103,7 @@ code();
     submode))
 
 (defun svelte--mark-buffer-locals (submode)
+  "Make buffer local variables from SUBMODE."
   (dolist (iter (svelte--submode-captured-locals submode))
     (make-local-variable (car iter))))
 
@@ -101,6 +111,7 @@ code();
   "List of all crucial variable symbols.")
 
 (defun svelte--mark-crucial-buffer-locals (submode)
+  "Make crucial buffer local variables from SUBMODE."
   (dolist (iter (svelte--submode-crucial-captured-locals submode))
     (make-local-variable (car iter))
     (push (car iter) svelte--crucial-variables)))
@@ -121,7 +132,30 @@ code();
                             :propertize #'js-syntax-propertize
                             :keymap js-mode-map))
 
+(defvar svelte-block-re)
+(defvar svelte-expression-re)
+(defvar svelte-directive-prefix-re)
+(defvar svelte--directive-prefix)
+(defvar svelte--block-keyword)
+(defvar svelte--font-lock-html-keywords)
+
+(defvar svelte--pug-submode)
+(defvar pug-tab-width)
+(defvar pug-indent-function)
+(defvar pug-mode-syntax-table)
+(defvar pug-mode-map)
+(defvar svelte--coffee-submode)
+(defvar coffee-tab-with)
+(defvar coffee-mode-syntax-table)
+(defvar coffee-mode-map)
+
+(defvar emmet-use-style-tag-and-attr-detection)
+(declare-function emmet-check-if-between "emmet-mode")
+(declare-function pug-forward-through-whitespace "pug-mode")
+(declare-function pug-compute-indentation-advice "svelte-mode")
+
 (defmacro svelte--with-locals (submode &rest body)
+  "Bind SUBMODE local variables and then run BODY."
   (declare (indent 1))
   `(cl-progv
        (when ,submode (mapcar #'car (svelte--submode-captured-locals ,submode)))
@@ -145,89 +179,6 @@ code();
         (svelte--submode-name submode)
       nil)))
 
-(defvar font-lock-beg)
-(defvar font-lock-end)
-
-(defun svelte--extend-font-lock-region ()
-  "Extend the font lock region according to HTML sub-mode needs.
-
-This is used via `font-lock-extend-region-functions'.  It ensures
-that the font-lock region is extended to cover either whole
-lines, or to the spot where the submode changes, whichever is
-smallest."
-  (let ((orig-beg font-lock-beg)
-        (orig-end font-lock-end))
-    ;; The logic here may look odd but it is needed to ensure that we
-    ;; do the right thing when trying to limit the search.
-    (save-excursion
-      (goto-char font-lock-beg)
-      ;; previous-single-property-change starts by looking at the
-      ;; previous character, but we're trying to extend a region to
-      ;; include just characters with the same submode as this
-      ;; character.
-      (unless (eobp)
-        (forward-char))
-      (setq font-lock-beg (previous-single-property-change
-                           (point) 'svelte-submode nil
-                           (line-beginning-position)))
-      (unless (eq (get-text-property font-lock-beg 'svelte-submode)
-                  (get-text-property orig-beg 'svelte-submode))
-        (cl-incf font-lock-beg))
-
-      (goto-char font-lock-end)
-      (unless (bobp)
-        (backward-char))
-      (setq font-lock-end (next-single-property-change
-                           (point) 'svelte-submode nil
-                           (line-beginning-position 2)))
-      (unless (eq (get-text-property font-lock-end 'svelte-submode)
-                  (get-text-property orig-end 'svelte-submode))
-        (cl-decf font-lock-end)))
-
-    ;; Also handle the multiline property -- but handle it here, and
-    ;; not via font-lock-extend-region-functions, to avoid the
-    ;; situation where the two extension functions disagree.
-    ;; See bug#29159.
-    (font-lock-extend-region-multiline)
-
-    (or (/= font-lock-beg orig-beg)
-        (/= font-lock-end orig-end))))
-
-(defun svelte--submode-fontify-one-region (submode beg end &optional loudly)
-  (if submode
-      (svelte--with-locals submode
-        (save-restriction
-          (font-lock-fontify-region beg end loudly)))
-    (font-lock-set-defaults)
-    (font-lock-default-fontify-region beg end loudly)))
-
-(defun svelte--submode-fontify-region (beg end loudly)
-  (syntax-propertize end)
-  (let ((orig-beg beg)
-        (orig-end end)
-        (new-beg beg)
-        (new-end end))
-    (while (< beg end)
-      (let ((submode (get-text-property beg 'svelte-submode))
-            (this-end (next-single-property-change beg 'svelte-submode
-                                                   nil end)))
-        (let ((extended (svelte--submode-fontify-one-region submode beg
-                                                           this-end loudly)))
-          ;; If the call extended the region, take note.  We track the
-          ;; bounds we were passed and take the union of any extended
-          ;; bounds.
-          (when (and (consp extended)
-                     (eq (car extended) 'jit-lock-bounds))
-            (setq new-beg (min new-beg (cadr extended)))
-            ;; Make sure that the next region starts where the
-            ;; extension of this region ends.
-            (setq this-end (cddr extended))
-            (setq new-end (max new-end this-end))))
-        (setq beg this-end)))
-    (when (or (/= orig-beg new-beg)
-              (/= orig-end new-end))
-      (cons 'jit-lock-bounds (cons new-beg new-end)))))
-
 (defvar-local svelte--last-submode nil
   "Record the last visited submode.
 This is used by `svelte--pre-command'.")
@@ -236,16 +187,19 @@ This is used by `svelte--pre-command'.")
   "Alist of stashed values of the crucial variables.")
 
 (defun svelte--stash-crucial-variables ()
+  "Stash crucial variables of current buffer."
   (setq svelte--stashed-crucial-variables
         (mapcar (lambda (sym)
                   (cons sym (buffer-local-value sym (current-buffer))))
                 svelte--crucial-variables)))
 
 (defun svelte--map-in-crucial-variables (alist)
+  "Set all crucial variables in ALIST."
   (dolist (item alist)
     (set (car item) (cdr item))))
 
 (defun svelte--pre-command ()
+  "Run pre- and post-hook for each command if current submode is changed."
   (let ((submode (get-text-property (point) 'svelte-submode)))
     (unless (eq submode svelte--last-submode)
       ;; If we're entering a submode, and the previous submode was
@@ -260,7 +214,9 @@ This is used by `svelte--pre-command'.")
          svelte--stashed-crucial-variables))
       (setq svelte--last-submode submode))))
 
+;;; Syntax propertize
 (defun svelte--syntax-propertize-submode (submode end)
+  "Set text properties from point to END or `end-tag' before END in SUBMODE."
   (save-excursion
     (when (search-forward (svelte--submode-end-tag submode) end t)
       (setq end (match-beginning 0))))
@@ -305,9 +261,12 @@ This is used by `svelte--pre-command'.")
         ;; Don't apply in a comment.
         (unless (syntax-ppss-context (syntax-ppss))
           (svelte--syntax-propertize-submode svelte--js-submode end)))))
-   sgml-syntax-propertize-rules))
+   sgml-syntax-propertize-rules)
+  "Svelte syntax propertize rules.")
 
 (defun svelte-syntax-propertize (start end)
+  "Svelte syntax propertize function for text between START and END."
+
   ;; First remove our special settings from the affected text.  They
   ;; will be re-applied as needed.
   (remove-list-of-text-properties start end
@@ -351,7 +310,6 @@ This is used by `svelte--pre-command'.")
                 ;; svelte--with-locals.
                 (funcall indent-line-function)))))
       ;; HTML.
-      ;; (sgml-indent-line)
       (svelte-html-indent-line)
       )))
 
@@ -405,7 +363,7 @@ This is used by `svelte--pre-command'.")
 	(re-search-backward tag-re bound t)))))
 
 (defun svelte--previous-block (type)
-  "Search previous line to find block of TYPE(beginning, middle or end). "
+  "Search previous line to find block of TYPE(beginning, middle or end)."
   (let ((bound (svelte--beginning-of-previous-line))
 	(block-re (cond ((equal type "beginning")
 			 (svelte--beginning-of-block-re))
@@ -419,7 +377,7 @@ This is used by `svelte--pre-command'.")
 	(re-search-backward block-re bound t)))))
 
 (defun svelte--current-block (type)
-  "Search current line to find block of TYPE(beginning, middle or end). "
+  "Search current line to find block of TYPE(beginning, middle or end)."
   (let ((bound (save-excursion
 		 (beginning-of-line)
 		 (point)))
@@ -465,6 +423,95 @@ This is used by `svelte--pre-command'.")
     (point)))
 
 ;;; Font lock
+(defvar font-lock-beg)
+(defvar font-lock-end)
+
+(defun svelte--extend-font-lock-region ()
+  "Extend the font lock region according to HTML sub-mode needs.
+
+This is used via `font-lock-extend-region-functions'.  It ensures
+that the font-lock region is extended to cover either whole
+lines, or to the spot where the submode changes, whichever is
+smallest."
+  (let ((orig-beg font-lock-beg)
+        (orig-end font-lock-end))
+    ;; The logic here may look odd but it is needed to ensure that we
+    ;; do the right thing when trying to limit the search.
+    (save-excursion
+      (goto-char font-lock-beg)
+      ;; previous-single-property-change starts by looking at the
+      ;; previous character, but we're trying to extend a region to
+      ;; include just characters with the same submode as this
+      ;; character.
+      (unless (eobp)
+        (forward-char))
+      (setq font-lock-beg (previous-single-property-change
+                           (point) 'svelte-submode nil
+                           (line-beginning-position)))
+      (unless (eq (get-text-property font-lock-beg 'svelte-submode)
+                  (get-text-property orig-beg 'svelte-submode))
+        (cl-incf font-lock-beg))
+
+      (goto-char font-lock-end)
+      (unless (bobp)
+        (backward-char))
+      (setq font-lock-end (next-single-property-change
+                           (point) 'svelte-submode nil
+                           (line-beginning-position 2)))
+      (unless (eq (get-text-property font-lock-end 'svelte-submode)
+                  (get-text-property orig-end 'svelte-submode))
+        (cl-decf font-lock-end)))
+
+    ;; Also handle the multiline property -- but handle it here, and
+    ;; not via font-lock-extend-region-functions, to avoid the
+    ;; situation where the two extension functions disagree.
+    ;; See bug#29159.
+    (font-lock-extend-region-multiline)
+
+    (or (/= font-lock-beg orig-beg)
+        (/= font-lock-end orig-end))))
+
+(defun svelte--submode-fontify-one-region (submode beg end &optional loudly)
+  "Fontify the text between BEG and END with SUBMODE locals bound.
+
+If LOUDLY is non-nil, print status messages while fontifying."
+  (if submode
+      (svelte--with-locals submode
+        (save-restriction
+          (font-lock-fontify-region beg end loudly)))
+    (font-lock-set-defaults)
+    (font-lock-default-fontify-region beg end loudly)))
+
+(defun svelte--submode-fontify-region (beg end loudly)
+  "Fontify the text between BEG and END.
+
+If LOUDLY is non-nil, print status message while fontifying."
+  (syntax-propertize end)
+  (let ((orig-beg beg)
+        (orig-end end)
+        (new-beg beg)
+        (new-end end))
+    (while (< beg end)
+      (let ((submode (get-text-property beg 'svelte-submode))
+            (this-end (next-single-property-change beg 'svelte-submode
+                                                   nil end)))
+        (let ((extended (svelte--submode-fontify-one-region submode beg
+                                                           this-end loudly)))
+          ;; If the call extended the region, take note.  We track the
+          ;; bounds we were passed and take the union of any extended
+          ;; bounds.
+          (when (and (consp extended)
+                     (eq (car extended) 'jit-lock-bounds))
+            (setq new-beg (min new-beg (cadr extended)))
+            ;; Make sure that the next region starts where the
+            ;; extension of this region ends.
+            (setq this-end (cddr extended))
+            (setq new-end (max new-end this-end))))
+        (setq beg this-end)))
+    (when (or (/= orig-beg new-beg)
+              (/= orig-end new-end))
+      (cons 'jit-lock-bounds (cons new-beg new-end)))))
+
 (setq svelte-block-re "\\({[#:/]\\).*\\(}\\)$")
 (setq svelte-expression-re "\\({\\)[^}]+\\(}\\)")
 (setq svelte-directive-prefix-re (concat
@@ -491,7 +538,7 @@ This is used by `svelte--pre-command'.")
 
 ;;; Pug mode
 (defun load-pug-submode ()
-  "Load pug-mode and patch it."
+  "Load `pug-mode' and patch it."
   (require 'pug-mode nil t)
   (setq pug-tab-width sgml-basic-offset)
 
@@ -500,21 +547,25 @@ This is used by `svelte--pre-command'.")
 			       :name "Pug"
 			       :end-tag "</template>"
 			       :syntax-table pug-mode-syntax-table
-			       :excluded-locals '(font-lock-extend-region-functions)
+			       :excluded-locals
+			       '(font-lock-extend-region-functions)
 			       :keymap pug-mode-map))
 
-  (defun pug-compute-indentation-addvice (origin-fun &rest args)
+  (defun pug-compute-indentation-advice ()
     "Calculate the maximum sensible indentation for the current line."
     (save-excursion
       (beginning-of-line)
       (if (bobp) 0
 	(pug-forward-through-whitespace t)
 	(+ (current-indentation)
-	   ;; TODO Add parameter-wise indentation
 	   (or (funcall pug-indent-function)
+	       ;; Take care of prog-indentation-context
 	       (car prog-indentation-context)
 	       0)))))
-  (advice-add 'pug-compute-indentation :around #'pug-compute-indentation-addvice)
+
+  (advice-add 'pug-compute-indentation
+	      :around
+	      #'pug-compute-indentation-advice)
   
   (svelte--mark-buffer-locals svelte--pug-submode)
   (svelte--mark-crucial-buffer-locals svelte--pug-submode)
@@ -522,7 +573,7 @@ This is used by `svelte--pre-command'.")
 
 ;;; Coffee mode
 (defun load-coffee-submode ()
-  "Load coffee-mode and patch it."
+  "Load `coffee-mode' and patch it."
   (require 'coffee-mode nil t)
   (setq coffee-tab-with sgml-basic-offset)
 
@@ -534,16 +585,17 @@ This is used by `svelte--pre-command'.")
 			       :keymap coffee-mode-map)))
 
 ;;; Emmet mode
-(defun emmet-detect-style-tag-and-attr-advice (origin-fun &rest args)
+(defun emmet-detect-style-tag-and-attr-advice ()
   "Detect style tag begin as `<style'."
   (let* ((style-attr-end "[^=][\"']")
 	 (style-attr-begin "style=[\"']")
 	 (style-tag-end "</style>")
+	 ;; Generic style tag begin
 	 (style-tag-begin "<style"))
     (and emmet-use-style-tag-and-attr-detection
 	 (or
-	  (emmet-check-if-between style-attr-begin style-attr-end) ; style attr
-	  (emmet-check-if-between style-tag-begin style-tag-end))))) ; style tag
+	  (emmet-check-if-between style-attr-begin style-attr-end)
+	  (emmet-check-if-between style-tag-begin style-tag-end)))))
 
 (advice-add
  'emmet-detect-style-tag-and-attr
@@ -554,6 +606,7 @@ This is used by `svelte--pre-command'.")
 (declare-function flyspell-generic-progmode-verify "flyspell")
 
 (defun svelte--flyspell-check-word ()
+  "Flyspell check word."
   (let ((submode (get-text-property (point) 'svelte-submode)))
     (if submode
         (flyspell-generic-progmode-verify)
