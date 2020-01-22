@@ -639,11 +639,8 @@ the rules from `css-mode'."
   ;; changes a key binding that might be accessed from the menu bar.
   (add-hook 'pre-command-hook #'svelte--pre-command nil t)
   (add-hook 'post-command-hook #'svelte--pre-command nil t)
-  (add-hook 'html-mode-hook
-	    (lambda ()
-	      (font-lock-add-keywords
-	       nil
-	       svelte--font-lock-html-keywords)))
+
+  (font-lock-add-keywords 'svelte-mode svelte--font-lock-html-keywords)
 
   ;; Make any captured variables buffer-local.
   (svelte--mark-buffer-locals svelte--css-submode)
