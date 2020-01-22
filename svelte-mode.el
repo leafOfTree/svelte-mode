@@ -5,8 +5,8 @@
 ;; Created: 21 Jan 2020
 ;; Keywords: wp languages
 ;; Homepage: https://github.com/leafOfTree/svelte-mode
-;; Version: 1.0.1
-;; Package-Version: 20200121.101
+;; Version: 1.0.2
+;; Package-Version: 20200121.102
 ;; Package-Requires: ((emacs "26.1"))
 ;; Credits: mhtml-mode
 
@@ -19,7 +19,8 @@
 ;; This major mode includes JavaScript/CSS and other language modes
 ;; as submode in html-mode.
 
-;;; Advice
+;;; Advice:
+
 ;; pug-compute-indentation: Take care of prog-indentation-context
 ;; emmet-detect-style-tag-and-attr: Generic style tag begin as "<style"
 
