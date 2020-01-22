@@ -19,6 +19,10 @@
 ;; This major mode includes JavaScript/CSS and other language modes
 ;; as submode in html-mode.
 
+;;; Advice
+;; pug-compute-indentation: Take care of prog-indentation-context
+;; emmet-detect-style-tag-and-attr: Generic style tag begin as "<style"
+
 ;;; Code:
 (eval-when-compile (require 'cl-lib))
 (require 'sgml-mode)
@@ -242,7 +246,8 @@ This is used by `svelte--pre-command'.")
         (unless (syntax-ppss-context (syntax-ppss))
 	  (unless (boundp 'svelte--pug-submode)
 	    (svelte--load-pug-submode))
-          (svelte--syntax-propertize-submode svelte--pug-submode end)))))
+	  (when (boundp 'svelte--pug-submode)
+	    (svelte--syntax-propertize-submode svelte--pug-submode end))))))
    ("<script.*coffee.*>"
     (0 (ignore
 	(goto-char (match-end 0))
@@ -250,7 +255,8 @@ This is used by `svelte--pre-command'.")
 	(unless (syntax-ppss-context (syntax-ppss))
 	  (unless (boundp 'svelte--coffee-submode)
 	    (svelte--load-coffee-submode))
-	  (svelte--syntax-propertize-submode svelte--coffee-submode end)))))
+	  (when (boundp 'svelte--coffee-submode)
+	    (svelte--syntax-propertize-submode svelte--coffee-submode end))))))
    ("<style.*?>"
     (0 (ignore
         (goto-char (match-end 0))
@@ -540,53 +546,53 @@ If LOUDLY is non-nil, print status message while fontifying."
 ;;; Pug mode
 (defun svelte--load-pug-submode ()
   "Load `pug-mode' and patch it."
-  (require 'pug-mode nil t)
-  (setq pug-tab-width sgml-basic-offset)
+  (when (require 'pug-mode nil t)
+    (setq pug-tab-width sgml-basic-offset)
+    (defconst svelte--pug-submode
+      (svelte--construct-submode 'pug-mode
+				 :name "Pug"
+				 :end-tag "</template>"
+				 :syntax-table pug-mode-syntax-table
+				 :excluded-locals
+				 '(font-lock-extend-region-functions)
+				 :keymap pug-mode-map))
 
-  (defconst svelte--pug-submode
-    (svelte--construct-submode 'pug-mode
-			       :name "Pug"
-			       :end-tag "</template>"
-			       :syntax-table pug-mode-syntax-table
-			       :excluded-locals
-			       '(font-lock-extend-region-functions)
-			       :keymap pug-mode-map))
-
-  (defun svelte--pug-compute-indentation-advice (orig-fun &rest args)
-    "Calculate the maximum sensible indentation for the current line.
+    (defun svelte--pug-compute-indentation-advice (orig-fun &rest args)
+      "Calculate the maximum sensible indentation for the current line.
 
 Ignore ORIG-FUN and ARGS."
-    (ignore orig-fun args)
-    (save-excursion
-      (beginning-of-line)
-      (if (bobp) 0
-	(pug-forward-through-whitespace t)
-	(+ (current-indentation)
-	   (or (funcall pug-indent-function)
-	       ;; Take care of prog-indentation-context
-	       (car prog-indentation-context)
-	       0)))))
+      (ignore orig-fun args)
+      (save-excursion
+	(beginning-of-line)
+	(if (bobp) 0
+	  (pug-forward-through-whitespace t)
+	  (+ (current-indentation)
+	     (or (funcall pug-indent-function)
+		 ;; Take care of prog-indentation-context
+		 (car prog-indentation-context)
+		 0)))))
 
-  (advice-add 'pug-compute-indentation
-	      :around
-	      #'svelte--pug-compute-indentation-advice)
+    (advice-add 'pug-compute-indentation
+		:around
+		#'svelte--pug-compute-indentation-advice)
+    
+    (svelte--mark-buffer-locals svelte--pug-submode)
+    (svelte--mark-crucial-buffer-locals svelte--pug-submode)
+    (setq svelte--crucial-variables (delete-dups svelte--crucial-variables))))
   
-  (svelte--mark-buffer-locals svelte--pug-submode)
-  (svelte--mark-crucial-buffer-locals svelte--pug-submode)
-  (setq svelte--crucial-variables (delete-dups svelte--crucial-variables)))
 
 ;;; Coffee mode
 (defun svelte--load-coffee-submode ()
   "Load `coffee-mode' and patch it."
-  (require 'coffee-mode nil t)
-  (setq coffee-tab-with sgml-basic-offset)
+  (when (require 'coffee-mode nil t)
+    (setq coffee-tab-with sgml-basic-offset)
 
-  (defconst svelte--coffee-submode
-    (svelte--construct-submode 'coffee-mode
-			       :name "Coffee"
-			       :end-tag "</script>"
-			       :syntax-table coffee-mode-syntax-table
-			       :keymap coffee-mode-map)))
+    (defconst svelte--coffee-submode
+      (svelte--construct-submode 'coffee-mode
+				 :name "Coffee"
+				 :end-tag "</script>"
+				 :syntax-table coffee-mode-syntax-table
+				 :keymap coffee-mode-map))))
 
 ;;; Emmet mode
 (defun svelte--emmet-detect-style-tag-and-attr-advice (orig-fun &rest args)
