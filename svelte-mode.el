@@ -538,12 +538,6 @@ If LOUDLY is non-nil, print status message while fontifying."
 	(,svelte-directive-prefix-re
 	 (0 font-lock-type-face))))
 
-(add-hook 'html-mode-hook
-	  (lambda ()
-	    (font-lock-add-keywords
-	     nil
-	     svelte--font-lock-html-keywords)))
-
 ;;; Pug mode
 (defun svelte--load-pug-submode ()
   "Load `pug-mode' and patch it."
@@ -645,6 +639,11 @@ the rules from `css-mode'."
   ;; changes a key binding that might be accessed from the menu bar.
   (add-hook 'pre-command-hook #'svelte--pre-command nil t)
   (add-hook 'post-command-hook #'svelte--pre-command nil t)
+  (add-hook 'html-mode-hook
+	    (lambda ()
+	      (font-lock-add-keywords
+	       nil
+	       svelte--font-lock-html-keywords)))
 
   ;; Make any captured variables buffer-local.
   (svelte--mark-buffer-locals svelte--css-submode)
