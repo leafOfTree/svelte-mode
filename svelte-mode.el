@@ -552,8 +552,11 @@ If LOUDLY is non-nil, print status message while fontifying."
 			       '(font-lock-extend-region-functions)
 			       :keymap pug-mode-map))
 
-  (defun svelte--pug-compute-indentation-advice ()
-    "Calculate the maximum sensible indentation for the current line."
+  (defun svelte--pug-compute-indentation-advice (orig-fun &rest args)
+    "Calculate the maximum sensible indentation for the current line.
+
+Ignore ORIG-FUN and ARGS."
+    (ignore orig-fun args)
     (save-excursion
       (beginning-of-line)
       (if (bobp) 0
@@ -586,8 +589,11 @@ If LOUDLY is non-nil, print status message while fontifying."
 			       :keymap coffee-mode-map)))
 
 ;;; Emmet mode
-(defun svelte--emmet-detect-style-tag-and-attr-advice ()
-  "Detect style tag begin as `<style'."
+(defun svelte--emmet-detect-style-tag-and-attr-advice (orig-fun &rest args)
+  "Detect style tag begin as `<style'.
+
+Ignore ORIG-FUN and ARGS."
+  (ignore orig-fun args)
   (let* ((style-attr-end "[^=][\"']")
 	 (style-attr-begin "style=[\"']")
 	 (style-tag-end "</style>")
