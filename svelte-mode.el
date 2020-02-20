@@ -283,8 +283,8 @@ This is used by `svelte--pre-command'.")
                                   '(syntax-table local-map svelte-submode))
   (goto-char start)
   (when (= emacs-major-version 26)
-  ;; Be sure to look back one character, because START won't yet have
-  ;; been propertized.
+    ;; Be sure to look back one character, because START won't yet have
+    ;; been propertized.
     (unless (bobp)
       (let ((submode (get-text-property (1- (point)) 'svelte-submode)))
 	(if submode
@@ -295,8 +295,8 @@ This is used by `svelte--pre-command'.")
     (unless (bobp)
       (let ((submode (get-text-property (1- (point)) 'svelte-submode)))
 	(when submode
-	    (svelte--syntax-propertize-submode submode end))))
-    (sgml-syntax-propertize (point) end svelte-syntax-propertize)))
+	  (svelte--syntax-propertize-submode submode end))))
+    (sgml-syntax-propertize (point) end svelte--syntax-propertize)))
 
 (setq svelte--block-keyword '("if" "else" "each" "await" "then" "catch" "as"))
 (setq svelte--directive-prefix '("on" "bind" "use" "in" "out" "transition" "animate" "class"))
