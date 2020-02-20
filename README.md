@@ -13,7 +13,7 @@ Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It depends 
 - Manually
 
   ```bash
-  git clone https://github.com/leafOfTree/svelte-mode
+  git clone https://github.com/leafOfTree/svelte-mode --depth 1
   ```
 
   ```lisp
