@@ -30,6 +30,7 @@
 (require 'js)
 (require 'css-mode)
 (require 'prog-mode)
+(require 'subr-x)
 
 (defcustom svelte-tag-relative-indent t
   "How <script> and <style> bodies are indented relative to the tag.
@@ -287,7 +288,7 @@ This is used by `svelte--pre-command'.")
     (let ((submode (get-text-property (1- (point)) 'svelte-submode)))
       (if submode
           (svelte--syntax-propertize-submode submode end))))
-  (sgml-syntax-propertize (point) end svelte--syntax-propertize))
+  (sgml-syntax-propertize (point) end))
 
 (setq svelte--block-keyword '("if" "else" "each" "await" "then" "catch" "as"))
 (setq svelte--directive-prefix '("on" "bind" "use" "in" "out" "transition" "animate" "class"))
@@ -308,7 +309,7 @@ This is used by `svelte--pre-command'.")
                                 (goto-char region-start)
                                 (sgml-calculate-indent))))
             (cond
-             ((eq svelte-tag-relative-indent nil)
+             ((not svelte-tag-relative-indent)
               (setq base-indent (- base-indent sgml-basic-offset)))
              ((eq svelte-tag-relative-indent 'ignore)
               (setq base-indent 0)))
