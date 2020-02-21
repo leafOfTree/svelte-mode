@@ -6,7 +6,7 @@
 </a>
 </p>
 
-Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It depends on `(emacs "26.1")`.
+Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It requires `(>= emacs-major-version "26.1")`.
 
 ## Installation
 
