@@ -46,7 +46,7 @@ Supports
 
 ## Customize
 
-See detail by `M-x` `describe-variable` [RET] `<variable-name>` [RET]
+See detail by `M-x` `describe-variable` [RET] `<variable-name>` [RET].
 
 | name   | description |
 |--------|-------------|
