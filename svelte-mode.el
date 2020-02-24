@@ -296,7 +296,7 @@ This is used by `svelte--pre-command'.")
       (let ((submode (get-text-property (1- (point)) 'svelte-submode)))
 	(when submode
 	  (svelte--syntax-propertize-submode submode end))))
-    (sgml-syntax-propertize (point) end svelte--syntax-propertize)))
+    (apply #'sgml-syntax-propertize (list (point) end svelte--syntax-propertize))))
 
 (setq svelte--block-keyword '("if" "else" "each" "await" "then" "catch" "as"))
 (setq svelte--directive-prefix '("on" "bind" "use" "in" "out" "transition" "animate" "class"))
