@@ -6,9 +6,7 @@
 ;; Keywords: wp languages
 ;; Homepage: https://github.com/leafOfTree/svelte-mode
 ;; Version: 1.0.2
-;; Package-Version: 20200121.102
 ;; Package-Requires: ((emacs "26.1"))
-;; Credits: mhtml-mode
 
 ;; This file is NOT part of GNU Emacs.
 ;; You can redistribute it and/or modify it under the terms of
@@ -17,7 +15,7 @@
 ;;; Commentary:
 
 ;; This major mode includes JavaScript/CSS and other language modes
-;; as submode in html-mode.
+;; as submode in html-mode. Mainly inspired by mhtml-mode.
 
 ;;; Advice:
 
