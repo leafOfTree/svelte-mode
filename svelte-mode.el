@@ -632,7 +632,7 @@ Ignore ORIG-FUN and ARGS."
 
 ;;;###autoload
 (define-derived-mode svelte-mode html-mode
-  '(("Svelte-") (:eval (or (svelte--submode-lighter) "HTML")))
+  "Svelte"
   "Major mode based on `html-mode', but works with embedded JS and CSS.
 
 Code inside a <script> element is indented using the rules from
