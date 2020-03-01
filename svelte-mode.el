@@ -612,10 +612,6 @@ Ignore ORIG-FUN and ARGS."
 	  (emmet-check-if-between style-attr-begin style-attr-end)
 	  (emmet-check-if-between style-tag-begin style-tag-end)))))
 
-(advice-add
- 'emmet-detect-style-tag-and-attr
- :around
- #'svelte--emmet-detect-style-tag-and-attr-advice)
 
 ;;; Flyspell
 (declare-function flyspell-generic-progmode-verify "flyspell")
@@ -626,6 +622,13 @@ Ignore ORIG-FUN and ARGS."
     (if submode
         (flyspell-generic-progmode-verify)
       t)))
+
+(defun svelte-unload-function ()
+  (advice-remove 'emmet-detect-style-tag-and-attr
+		 #'svelte--emmet-detect-style-tag-and-attr-advice)
+
+  (advice-remove 'pug-compute-indentation
+		 #'svelte--pug-compute-indentation-advice))
 
 ;;;###autoload
 (define-derived-mode svelte-mode html-mode
@@ -659,6 +662,11 @@ the rules from `css-mode'."
 
   ;: Hack
   (js--update-quick-match-re)
+
+  (advice-add
+   'emmet-detect-style-tag-and-attr
+   :around
+   #'svelte--emmet-detect-style-tag-and-attr-advice)
 
   ;; This is sort of a prog-mode as well as a text mode.
   (run-hooks 'prog-mode-hook))
