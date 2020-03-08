@@ -15,7 +15,7 @@
 ;;; Commentary:
 
 ;; This major mode includes JavaScript/CSS and other language modes
-;; as submode in html-mode. Mainly inspired by mhtml-mode.
+;; as submode in html-mode. Mainly based on mhtml-mode.
 
 ;;; Advice:
 
@@ -29,6 +29,11 @@
 (require 'css-mode)
 (require 'prog-mode)
 (require 'subr-x)
+
+(declare-function emmet-check-if-between "ext:emmet-mode")
+(declare-function pug-forward-through-whitespace "ext:pug-mode")
+(declare-function flyspell-generic-progmode-verify "ext:flyspell")
+(declare-function svelte--pug-compute-indentation-advice "svelte-mode")
 
 (defcustom svelte-tag-relative-indent t
   "How <script> and <style> bodies are indented relative to the tag.
@@ -155,10 +160,6 @@ code();
 (defvar coffee-mode-map)
 
 (defvar emmet-use-style-tag-and-attr-detection)
-(declare-function emmet-check-if-between "emmet-mode")
-(declare-function pug-forward-through-whitespace "pug-mode")
-(declare-function svelte--pug-compute-indentation-advice
-		  "svelte-mode")
 
 (defmacro svelte--with-locals (submode &rest body)
   "Bind SUBMODE local variables and then run BODY."
@@ -614,7 +615,6 @@ Ignore ORIG-FUN and ARGS."
 
 
 ;;; Flyspell
-(declare-function flyspell-generic-progmode-verify "flyspell")
 
 (defun svelte--flyspell-check-word ()
   "Flyspell check word."
@@ -624,6 +624,9 @@ Ignore ORIG-FUN and ARGS."
       t)))
 
 (defun svelte-unload-function ()
+  "Unload advices from svelte.
+
+Called by `unload-feature'."
   (advice-remove 'emmet-detect-style-tag-and-attr
 		 #'svelte--emmet-detect-style-tag-and-attr-advice)
 
