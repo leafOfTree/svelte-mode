@@ -30,10 +30,81 @@
 (require 'prog-mode)
 (require 'subr-x)
 
+(declare-function flyspell-generic-progmode-verify "ext:flyspell")
 (declare-function emmet-check-if-between "ext:emmet-mode")
 (declare-function pug-forward-through-whitespace "ext:pug-mode")
-(declare-function flyspell-generic-progmode-verify "ext:flyspell")
 (declare-function svelte--pug-compute-indentation-advice "svelte-mode")
+
+(defvar svelte-block-re "\\({[#:/]\\).*\\(}\\)$" "Block regexp.")
+(defvar svelte-expression-re "\\({\\)[^}]+\\(}\\)" "Expression regexp.")
+(defvar svelte--directive-prefix
+  '("on" "bind" "use" "in" "out" "transition" "animate" "class")
+  "Directive prefixes.")
+(defvar svelte-directive-prefix-re
+  (concat (regexp-opt svelte--directive-prefix) ":[^=/> ]+")
+  "Directive prefixes regexp.")
+(defvar svelte--block-keywords '("if" "else" "each" "await" "then" "catch" "as")
+  "Block keywords.")
+(defvar svelte--font-lock-html-keywords
+  `((,svelte-block-re
+     (1 font-lock-type-face)
+     (2 font-lock-type-face)
+     (,(regexp-opt svelte--block-keywords 'words)
+      (goto-char (match-end 1)) nil (0 font-lock-keyword-face)))
+    (,svelte-expression-re
+     (1 font-lock-type-face)
+     (2 font-lock-type-face))
+    (,svelte-directive-prefix-re
+     (0 font-lock-type-face)))
+  "Font lock keywords in the html section.")
+(defvar font-lock-beg)
+(defvar font-lock-end)
+(defvar svelte--syntax-propertize
+  (syntax-propertize-rules
+   ("<template.*pug.*>"
+    (0 (ignore
+        (goto-char (match-end 0))
+        ;; Don't apply in a comment.
+        (unless (syntax-ppss-context (syntax-ppss))
+	  (unless (boundp 'svelte--pug-submode)
+	    (svelte--load-pug-submode))
+	  (when (boundp 'svelte--pug-submode)
+	    (svelte--syntax-propertize-submode svelte--pug-submode end))))))
+   ("<script.*coffee.*>"
+    (0 (ignore
+	(goto-char (match-end 0))
+	;; Don't apply in a comment.
+	(unless (syntax-ppss-context (syntax-ppss))
+	  (unless (boundp 'svelte--coffee-submode)
+	    (svelte--load-coffee-submode))
+	  (when (boundp 'svelte--coffee-submode)
+	    (svelte--syntax-propertize-submode svelte--coffee-submode end))))))
+   ("<style.*?>"
+    (0 (ignore
+        (goto-char (match-end 0))
+        ;; Don't apply in a comment.
+        (unless (syntax-ppss-context (syntax-ppss))
+          (svelte--syntax-propertize-submode svelte--css-submode end)))))
+   ("<script.*?>"
+    (0 (ignore
+        (goto-char (match-end 0))
+        ;; Don't apply in a comment.
+        (unless (syntax-ppss-context (syntax-ppss))
+          (svelte--syntax-propertize-submode svelte--js-submode end)))))
+   sgml-syntax-propertize-rules)
+  "Svelte syntax propertize rules.")
+
+;;; Submode variables:
+(defvar svelte--pug-submode)
+(defvar pug-tab-width)
+(defvar pug-indent-function)
+(defvar pug-mode-syntax-table)
+(defvar pug-mode-map)
+(defvar svelte--coffee-submode)
+(defvar coffee-tab-with)
+(defvar coffee-mode-syntax-table)
+(defvar coffee-mode-map)
+(defvar emmet-use-style-tag-and-attr-detection)
 
 (defcustom svelte-tag-relative-indent t
   "How <script> and <style> bodies are indented relative to the tag.
@@ -142,25 +213,6 @@ code();
                             :propertize #'js-syntax-propertize
                             :keymap js-mode-map))
 
-(defvar svelte-block-re)
-(defvar svelte-expression-re)
-(defvar svelte-directive-prefix-re)
-(defvar svelte--directive-prefix)
-(defvar svelte--block-keyword)
-(defvar svelte--font-lock-html-keywords)
-
-(defvar svelte--pug-submode)
-(defvar pug-tab-width)
-(defvar pug-indent-function)
-(defvar pug-mode-syntax-table)
-(defvar pug-mode-map)
-(defvar svelte--coffee-submode)
-(defvar coffee-tab-with)
-(defvar coffee-mode-syntax-table)
-(defvar coffee-mode-map)
-
-(defvar emmet-use-style-tag-and-attr-detection)
-
 (defmacro svelte--with-locals (submode &rest body)
   "Bind SUBMODE local variables and then run BODY."
   (declare (indent 1))
@@ -238,40 +290,6 @@ This is used by `svelte--pre-command'.")
     (funcall (svelte--submode-propertize submode) (point) end))
   (goto-char end))
 
-(defvar svelte--syntax-propertize
-  (syntax-propertize-rules
-   ("<template.*pug.*>"
-    (0 (ignore
-        (goto-char (match-end 0))
-        ;; Don't apply in a comment.
-        (unless (syntax-ppss-context (syntax-ppss))
-	  (unless (boundp 'svelte--pug-submode)
-	    (svelte--load-pug-submode))
-	  (when (boundp 'svelte--pug-submode)
-	    (svelte--syntax-propertize-submode svelte--pug-submode end))))))
-   ("<script.*coffee.*>"
-    (0 (ignore
-	(goto-char (match-end 0))
-	;; Don't apply in a comment.
-	(unless (syntax-ppss-context (syntax-ppss))
-	  (unless (boundp 'svelte--coffee-submode)
-	    (svelte--load-coffee-submode))
-	  (when (boundp 'svelte--coffee-submode)
-	    (svelte--syntax-propertize-submode svelte--coffee-submode end))))))
-   ("<style.*?>"
-    (0 (ignore
-        (goto-char (match-end 0))
-        ;; Don't apply in a comment.
-        (unless (syntax-ppss-context (syntax-ppss))
-          (svelte--syntax-propertize-submode svelte--css-submode end)))))
-   ("<script.*?>"
-    (0 (ignore
-        (goto-char (match-end 0))
-        ;; Don't apply in a comment.
-        (unless (syntax-ppss-context (syntax-ppss))
-          (svelte--syntax-propertize-submode svelte--js-submode end)))))
-   sgml-syntax-propertize-rules)
-  "Svelte syntax propertize rules.")
 
 (defun svelte-syntax-propertize (start end)
   "Svelte syntax propertize function for text between START and END."
@@ -296,9 +314,6 @@ This is used by `svelte--pre-command'.")
 	(when submode
 	  (svelte--syntax-propertize-submode submode end))))
     (apply #'sgml-syntax-propertize (list (point) end svelte--syntax-propertize))))
-
-(setq svelte--block-keyword '("if" "else" "each" "await" "then" "catch" "as"))
-(setq svelte--directive-prefix '("on" "bind" "use" "in" "out" "transition" "animate" "class"))
 
 ;;; Indentation
 (defun svelte-indent-line ()
@@ -362,6 +377,7 @@ This is used by `svelte--pre-command'.")
 	     (and (svelte--previous-block "end")
 		  (svelte--current-tag "start")))
 	 0)))
+
 (defun svelte--current-tag (type)
   "Search current line to find tag of TYPE(beginning or end)."
   (interactive)
@@ -412,21 +428,21 @@ This is used by `svelte--pre-command'.")
   "Regexp of beginning of block."
   (concat
    "{#\\("
-   (string-join svelte--block-keyword "\\|")
+   (string-join svelte--block-keywords "\\|")
    "\\)"))
 
 (defun svelte--middle-of-block-re ()
   "Regexp of middle of block."
   (concat
    "{:\\("
-   (string-join svelte--block-keyword "\\|")
+   (string-join svelte--block-keywords "\\|")
    "\\)"))
 
 (defun svelte--end-of-block-re ()
   "Regexp of end of block."
   (concat
    "{/\\("
-   (string-join svelte--block-keyword "\\|")
+   (string-join svelte--block-keywords "\\|")
    "\\)"))
 
 (defun svelte--beginning-of-previous-line ()
@@ -439,9 +455,6 @@ This is used by `svelte--pre-command'.")
     (point)))
 
 ;;; Font lock
-(defvar font-lock-beg)
-(defvar font-lock-end)
-
 (defun svelte--extend-font-lock-region ()
   "Extend the font lock region according to HTML sub-mode needs.
 
@@ -528,23 +541,6 @@ If LOUDLY is non-nil, print status message while fontifying."
               (/= orig-end new-end))
       (cons 'jit-lock-bounds (cons new-beg new-end)))))
 
-(setq svelte-block-re "\\({[#:/]\\).*\\(}\\)$")
-(setq svelte-expression-re "\\({\\)[^}]+\\(}\\)")
-(setq svelte-directive-prefix-re (concat
-				  (regexp-opt svelte--directive-prefix)
-				  ":[^=/> ]+"))
-
-(setq svelte--font-lock-html-keywords
-      `((,svelte-block-re
-	 (1 font-lock-type-face)
-	 (2 font-lock-type-face)
-	 (,(regexp-opt svelte--block-keyword 'words)
-	  (goto-char (match-end 1)) nil (0 font-lock-keyword-face)))
-	(,svelte-expression-re
-	 (1 font-lock-type-face)
-	 (2 font-lock-type-face))
-	(,svelte-directive-prefix-re
-	 (0 font-lock-type-face))))
 
 ;;; Pug mode
 (defun svelte--load-pug-submode ()
