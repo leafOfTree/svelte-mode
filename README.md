@@ -17,9 +17,19 @@ Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It requires
   ```
 
   ```lisp
-  ; .emacs
+  ; ~/.emacs
   (add-to-list 'load-path "/path/to/svelte-mode")
   (require 'svelte-mode)
+  ```
+
+  For [Spacemacs][1], put them inside `dotspacemacs/user-config`.
+
+  ```lisp
+  ; ~/.spacemacs
+  (defun dotspacemacs/user-config ()
+        
+      (add-to-list 'load-path "/path/to/svelte-mode")
+      (require 'svelte-mode)
   ```
 
 <!--
@@ -55,3 +65,4 @@ See detail by `M-x` `describe-variable` [RET] `<variable-name>` [RET].
 
 
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el
+[1]: https://github.com/syl20bnr/spacemacs
