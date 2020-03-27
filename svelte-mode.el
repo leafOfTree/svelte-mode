@@ -35,6 +35,20 @@
 (declare-function pug-forward-through-whitespace "ext:pug-mode")
 (declare-function svelte--pug-compute-indentation-advice "svelte-mode")
 
+;;; Submode variables:
+(defvar svelte--css-submode)
+(defvar svelte--js-submode)
+(defvar svelte--pug-submode)
+(defvar pug-tab-width)
+(defvar pug-indent-function)
+(defvar pug-mode-syntax-table)
+(defvar pug-mode-map)
+(defvar svelte--coffee-submode)
+(defvar coffee-tab-with)
+(defvar coffee-mode-syntax-table)
+(defvar coffee-mode-map)
+(defvar emmet-use-style-tag-and-attr-detection)
+
 (defvar svelte-block-re "\\({[#:/]\\).*\\(}\\)$" "Block regexp.")
 (defvar svelte-expression-re "\\({\\)[^}]+\\(}\\)" "Expression regexp.")
 (defvar svelte--directive-prefix
@@ -94,17 +108,6 @@
    sgml-syntax-propertize-rules)
   "Svelte syntax propertize rules.")
 
-;;; Submode variables:
-(defvar svelte--pug-submode)
-(defvar pug-tab-width)
-(defvar pug-indent-function)
-(defvar pug-mode-syntax-table)
-(defvar pug-mode-map)
-(defvar svelte--coffee-submode)
-(defvar coffee-tab-with)
-(defvar coffee-mode-syntax-table)
-(defvar coffee-mode-map)
-(defvar emmet-use-style-tag-and-attr-detection)
 
 (defcustom svelte-tag-relative-indent t
   "How <script> and <style> bodies are indented relative to the tag.
