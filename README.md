@@ -10,6 +10,10 @@ Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It requires
 
 ## Installation
 
+- `package-install`
+
+  `M-x` `package-install` [RET] `svelte-mode` [RET]
+
 - Manually
 
   ```bash
@@ -31,12 +35,6 @@ Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It requires
       (add-to-list 'load-path "/path/to/svelte-mode")
       (require 'svelte-mode)
   ```
-
-<!--
-- `package-install`
-
-  `M-x` `package-install` [RET] `svelte-mode` [RET]
--->
   
 Svelte-mode should be auto enabled for `.svelte` files if everything goes well. Please stay up to date. Feel free to open an issue or a pull request.
 
