@@ -10,9 +10,9 @@ Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It requires
 
 ## Installation
 
-- `package-install`
+- [MELPA][2]
 
-  `M-x` `package-install` [RET] `svelte-mode` [RET]
+  <kbd>M-x</kbd> `package-install` <kbd>RET</kbd> `svelte-mode` <kbd>RET</kbd>
 
 - Manually
 
@@ -64,3 +64,4 @@ See detail by `M-x` `describe-variable` [RET] `<variable-name>` [RET].
 
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el
 [1]: https://github.com/syl20bnr/spacemacs
+[2]: https://melpa.org/#/
