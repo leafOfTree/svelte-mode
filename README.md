@@ -54,7 +54,7 @@ Supports
 
 ## Customize
 
-See detail by `M-x` `describe-variable` [RET] `<variable-name>` [RET].
+See detail by <kbd>M-x</kbd> `describe-variable` <kbd>RET</kbd> `<variable-name>` <kbd>RET</kbd>.
 
 | name   | description |
 |--------|-------------|
