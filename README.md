@@ -64,4 +64,4 @@ See detail by <kbd>M-x</kbd> `describe-variable` <kbd>RET</kbd> `<variable-name>
 
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el
 [1]: https://github.com/syl20bnr/spacemacs
-[2]: https://melpa.org/#/
+[2]: https://melpa.org/#/svelte-mode
