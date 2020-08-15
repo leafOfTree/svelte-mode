@@ -5,7 +5,7 @@
 ;; Created: 21 Jan 2020
 ;; Keywords: wp languages
 ;; Homepage: https://github.com/leafOfTree/svelte-mode
-;; Version: 1.0.2
+;; Version: 1.0.3
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -675,6 +675,7 @@ the rules from `css-mode'."
 
 (put 'svelte-mode 'flyspell-mode-predicate #'svelte--flyspell-check-word)
 
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
 (provide 'svelte-mode)
 
