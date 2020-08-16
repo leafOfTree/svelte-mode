@@ -39,12 +39,10 @@
 (defvar svelte--css-submode)
 (defvar svelte--js-submode)
 (defvar svelte--pug-submode)
-(defvar pug-tab-width)
 (defvar pug-indent-function)
 (defvar pug-mode-syntax-table)
 (defvar pug-mode-map)
 (defvar svelte--coffee-submode)
-(defvar coffee-tab-width)
 (defvar coffee-mode-syntax-table)
 (defvar coffee-mode-map)
 (defvar emmet-use-style-tag-and-attr-detection)
@@ -558,7 +556,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 (defun svelte--load-pug-submode ()
   "Load `pug-mode' and patch it."
   (when (require 'pug-mode nil t)
-    (setq pug-tab-width svelte-basic-offset)
+    (customize-set-variable 'pug-tab-width svelte-basic-offset)
     (defconst svelte--pug-submode
       (svelte--construct-submode 'pug-mode
 				 :name "Pug"
@@ -596,8 +594,7 @@ Ignore ORIG-FUN and ARGS."
 (defun svelte--load-coffee-submode ()
   "Load `coffee-mode' and patch it."
   (when (require 'coffee-mode nil t)
-    (setq coffee-tab-width svelte-basic-offset)
-
+    (customize-set-variable 'coffee-tab-width svelte-basic-offset)
     (defconst svelte--coffee-submode
       (svelte--construct-submode 'coffee-mode
 				 :name "Coffee"
