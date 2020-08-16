@@ -5,7 +5,7 @@
 ;; Created: 21 Jan 2020
 ;; Keywords: wp languages
 ;; Homepage: https://github.com/leafOfTree/svelte-mode
-;; Version: 1.0.3
+;; Version: 1.0.4
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is NOT part of GNU Emacs.
