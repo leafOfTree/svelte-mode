@@ -44,7 +44,7 @@
 (defvar pug-mode-syntax-table)
 (defvar pug-mode-map)
 (defvar svelte--coffee-submode)
-(defvar coffee-tab-with)
+(defvar coffee-tab-width)
 (defvar coffee-mode-syntax-table)
 (defvar coffee-mode-map)
 (defvar emmet-use-style-tag-and-attr-detection)
@@ -596,7 +596,7 @@ Ignore ORIG-FUN and ARGS."
 (defun svelte--load-coffee-submode ()
   "Load `coffee-mode' and patch it."
   (when (require 'coffee-mode nil t)
-    (setq coffee-tab-with svelte-basic-offset)
+    (setq coffee-tab-width svelte-basic-offset)
 
     (defconst svelte--coffee-submode
       (svelte--construct-submode 'coffee-mode
