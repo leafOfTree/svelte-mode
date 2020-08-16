@@ -108,6 +108,15 @@
    sgml-syntax-propertize-rules)
   "Svelte syntax propertize rules.")
 
+(defcustom svelte-basic-offset sgml-basic-offset
+  "Specifies the basic indentation level for .svelte"
+  :type 'integer
+  :set (lambda (symbol value)
+         (customize-set-variable 'sgml-basic-offset value)
+         (customize-set-variable 'css-indent-offset value)
+         (customize-set-variable 'js-indent-level value)
+         (set-default symbol value))
+  :group 'sgml)
 
 (defcustom svelte-tag-relative-indent t
   "How <script> and <style> bodies are indented relative to the tag.
@@ -335,7 +344,7 @@ This is used by `svelte--pre-command'.")
                                 (sgml-calculate-indent))))
             (cond
              ((not svelte-tag-relative-indent)
-              (setq base-indent (- base-indent sgml-basic-offset)))
+              (setq base-indent (- base-indent svelte-basic-offset)))
              ((eq svelte-tag-relative-indent 'ignore)
               (setq base-indent 0)))
             (narrow-to-region region-start (point-max))
@@ -370,12 +379,12 @@ This is used by `svelte--pre-command'.")
 (defun svelte--html-block-offset ()
   "Indentation offset of Svelte blocks like {#if...}, {#each...}."
   (cond ((or (svelte--previous-block "beginning"))
-	 sgml-basic-offset)
+	 svelte-basic-offset)
 	((or (svelte--current-block "middle")
 	     (svelte--current-block "end")
 	     (and (svelte--previous-block "end")
 		  (svelte--current-tag "end")))
-	 (- 0 sgml-basic-offset))
+	 (- 0 svelte-basic-offset))
 	((or (svelte--previous-block "end")
 	     (and (svelte--previous-block "end")
 		  (svelte--current-tag "start")))
@@ -549,7 +558,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 (defun svelte--load-pug-submode ()
   "Load `pug-mode' and patch it."
   (when (require 'pug-mode nil t)
-    (setq pug-tab-width sgml-basic-offset)
+    (setq pug-tab-width svelte-basic-offset)
     (defconst svelte--pug-submode
       (svelte--construct-submode 'pug-mode
 				 :name "Pug"
@@ -587,7 +596,7 @@ Ignore ORIG-FUN and ARGS."
 (defun svelte--load-coffee-submode ()
   "Load `coffee-mode' and patch it."
   (when (require 'coffee-mode nil t)
-    (setq coffee-tab-with sgml-basic-offset)
+    (setq coffee-tab-with svelte-basic-offset)
 
     (defconst svelte--coffee-submode
       (svelte--construct-submode 'coffee-mode
