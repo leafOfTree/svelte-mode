@@ -54,12 +54,17 @@ Supports
 
 ## Customize
 
-See detail by <kbd>M-x</kbd> `describe-variable` <kbd>RET</kbd> `<variable-name>` <kbd>RET</kbd>.
+See detail by <kbd>M-x</kbd> `describe-variable` <kbd>RET</kbd> `<variable-name>` <kbd>RET</kbd>. Use `Customize` instead of `Set` in the GUI.
 
-| name   | description |
-|--------|-------------|
-| svelte-tag-relative-indent | How `<script>` and `<style>` bodies are indented relative to the tag. |
-| sgml-basic-offset | Specifies the basic indentation level. |
+Or customize variable programatically, like
+```lisp
+(customize-set-variable 'svelte-basic-offset 2)
+```
+
+| name                       | description                                                       | default           |
+|----------------------------|-------------------------------------------------------------------|-------------------|
+| svelte-basic-offset        | Specifies the basic indentation level.                            | sgml-basic-offset |
+| svelte-tag-relative-indent | Whether `<script>` and `<style>` bodies indent to the tag.        | t                 |
 
 
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el
