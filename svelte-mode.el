@@ -239,17 +239,81 @@ code();
                             :propertize #'js-syntax-propertize
                             :keymap js-mode-map))
 
+;;; Pug mode
+(defun svelte--load-pug-submode ()
+  "Load `pug-mode' and patch it."
+  (when (require 'pug-mode nil t)
+    (customize-set-variable 'pug-tab-width svelte-basic-offset)
+    (defconst svelte--pug-submode
+      (svelte--construct-submode 'pug-mode
+				 :name "Pug"
+				 :end-tag "</template>"
+				 :syntax-table pug-mode-syntax-table
+				 :excluded-locals '(font-lock-extend-region-functions)
+				 :keymap pug-mode-map))
+
+    (defun svelte--pug-compute-indentation-advice (orig-fun &rest args)
+      "Calculate the maximum sensible indentation for the current line.
+
+Ignore ORIG-FUN and ARGS."
+      (ignore orig-fun args)
+      (save-excursion
+	(beginning-of-line)
+	(if (bobp) 0
+	  (pug-forward-through-whitespace t)
+	  (+ (current-indentation)
+	     (or (funcall pug-indent-function)
+		 ;; Take care of prog-indentation-context
+		 (car prog-indentation-context)
+		 0)))))
+
+    (advice-add 'pug-compute-indentation
+		:around
+		#'svelte--pug-compute-indentation-advice)
+
+    (svelte--mark-buffer-locals svelte--pug-submode)
+    (svelte--mark-crucial-buffer-locals svelte--pug-submode)
+    (setq svelte--crucial-variables (delete-dups svelte--crucial-variables))))
+
+;;; Coffee mode
+(defun svelte--load-coffee-submode ()
+  "Load `coffee-mode' and patch it."
+  (when (require 'coffee-mode nil t)
+    (customize-set-variable 'coffee-tab-width svelte-basic-offset)
+    (defconst svelte--coffee-submode
+      (svelte--construct-submode 'coffee-mode
+				 :name "Coffee"
+				 :end-tag "</script>"
+				 :syntax-table coffee-mode-syntax-table
+				 :keymap coffee-mode-map))))
+
+;;; TypeScript mode
+(defun svelte--load-typescript-submode ()
+  "Load `typescript-mode' and patch it."
+  (when (require 'typescript-mode nil t)
+    (customize-set-variable 'typescript-indent-level svelte-basic-offset)
+    (defconst svelte--typescript-submode
+      (svelte--construct-submode 'typescript-mode
+                                 :name "TypeScript"
+                                 :end-tag "</script>"
+                                 :syntax-table typescript-mode-syntax-table
+                                 :propertize #'typescript-syntax-propertize
+                                 :indent-function #'js-indent-line
+                                 :keymap typescript-mode-map))))
+
 (defmacro svelte--with-locals (submode &rest body)
   "Bind SUBMODE local variables and then run BODY."
   (declare (indent 1))
   `(cl-progv
-       (when ,submode (mapcar #'car (svelte--submode-captured-locals ,submode)))
-       (when ,submode (mapcar #'cdr (svelte--submode-captured-locals ,submode)))
+       (when ,submode
+         (mapcar #'car (svelte--submode-captured-locals ,submode)))
+       (when ,submode
+         (mapcar #'cdr (svelte--submode-captured-locals ,submode)))
      (cl-progv
-	 (when ,submode (mapcar #'car (svelte--submode-crucial-captured-locals
-				       ,submode)))
-	 (when ,submode (mapcar #'cdr (svelte--submode-crucial-captured-locals
-				       ,submode)))
+	 (when ,submode
+           (mapcar #'car (svelte--submode-crucial-captured-locals ,submode)))
+	 (when ,submode
+           (mapcar #'cdr (svelte--submode-crucial-captured-locals ,submode)))
        ,@body)))
 
 (defun svelte--submode-lighter ()
@@ -305,7 +369,8 @@ This is used by `svelte--pre-command'.")
   (save-excursion
     (when (search-forward (svelte--submode-end-tag submode) end t)
       (setq end (match-beginning 0))))
-  (set-text-properties (point) end
+  (set-text-properties (point)
+                       end
                        (list 'svelte-submode submode
                              'syntax-table (svelte--submode-syntax-table submode)
                              ;; We want local-map here so that we act
@@ -322,7 +387,8 @@ This is used by `svelte--pre-command'.")
 
   ;; First remove our special settings from the affected text.  They
   ;; will be re-applied as needed.
-  (remove-list-of-text-properties start end
+  (remove-list-of-text-properties start
+                                  end
                                   '(syntax-table local-map svelte-submode))
   (goto-char start)
   (when (= emacs-major-version 26)
@@ -394,16 +460,16 @@ This is used by `svelte--pre-command'.")
 (defun svelte--html-block-offset ()
   "Indentation offset of Svelte blocks like {#if...}, {#each...}."
   (cond ((or (svelte--previous-block "beginning"))
-	 svelte-basic-offset)
-	((or (svelte--current-block "middle")
-	     (svelte--current-block "end")
-	     (and (svelte--previous-block "end")
-		  (svelte--current-tag "end")))
-	 (- 0 svelte-basic-offset))
-	((or (svelte--previous-block "end")
-	     (and (svelte--previous-block "end")
-		  (svelte--current-tag "start")))
-	 0)))
+         svelte-basic-offset)
+        ((or (svelte--current-block "middle")
+             (svelte--current-block "end")
+             (and (svelte--previous-block "end")
+                  (svelte--current-tag "end")))
+         (- 0 svelte-basic-offset))
+        ((or (svelte--previous-block "end")
+             (and (svelte--previous-block "end")
+                  (svelte--current-tag "start")))
+         0)))
 
 (defun svelte--current-tag (type)
   "Search current line to find tag of TYPE(beginning or end)."
@@ -499,10 +565,11 @@ smallest."
       ;; previous character, but we're trying to extend a region to
       ;; include just characters with the same submode as this
       ;; character.
-      (unless (eobp)
-        (forward-char))
+      (unless (eobp) (forward-char))
       (setq font-lock-beg (previous-single-property-change
-                           (point) 'svelte-submode nil
+                           (point)
+                           'svelte-submode
+                           nil
                            (line-beginning-position)))
       (unless (eq (get-text-property font-lock-beg 'svelte-submode)
                   (get-text-property orig-beg 'svelte-submode))
@@ -512,7 +579,9 @@ smallest."
       (unless (bobp)
         (backward-char))
       (setq font-lock-end (next-single-property-change
-                           (point) 'svelte-submode nil
+                           (point)
+                           'svelte-submode
+                           nil
                            (line-beginning-position 2)))
       (unless (eq (get-text-property font-lock-end 'svelte-submode)
                   (get-text-property orig-end 'svelte-submode))
@@ -549,10 +618,9 @@ If LOUDLY is non-nil, print status message while fontifying."
         (new-end end))
     (while (< beg end)
       (let ((submode (get-text-property beg 'svelte-submode))
-            (this-end (next-single-property-change beg 'svelte-submode
-                                                   nil end)))
-        (let ((extended (svelte--submode-fontify-one-region submode beg
-                                                           this-end loudly)))
+            (this-end (next-single-property-change beg 'svelte-submode nil end)))
+        (let ((extended (svelte--submode-fontify-one-region
+                         submode beg this-end loudly)))
           ;; If the call extended the region, take note.  We track the
           ;; bounds we were passed and take the union of any extended
           ;; bounds.
@@ -567,70 +635,6 @@ If LOUDLY is non-nil, print status message while fontifying."
     (when (or (/= orig-beg new-beg)
               (/= orig-end new-end))
       (cons 'jit-lock-bounds (cons new-beg new-end)))))
-
-
-;;; Pug mode
-(defun svelte--load-pug-submode ()
-  "Load `pug-mode' and patch it."
-  (when (require 'pug-mode nil t)
-    (customize-set-variable 'pug-tab-width svelte-basic-offset)
-    (defconst svelte--pug-submode
-      (svelte--construct-submode 'pug-mode
-				 :name "Pug"
-				 :end-tag "</template>"
-				 :syntax-table pug-mode-syntax-table
-				 :excluded-locals '(font-lock-extend-region-functions)
-				 :keymap pug-mode-map))
-
-    (defun svelte--pug-compute-indentation-advice (orig-fun &rest args)
-      "Calculate the maximum sensible indentation for the current line.
-
-Ignore ORIG-FUN and ARGS."
-      (ignore orig-fun args)
-      (save-excursion
-	(beginning-of-line)
-	(if (bobp) 0
-	  (pug-forward-through-whitespace t)
-	  (+ (current-indentation)
-	     (or (funcall pug-indent-function)
-		 ;; Take care of prog-indentation-context
-		 (car prog-indentation-context)
-		 0)))))
-
-    (advice-add 'pug-compute-indentation
-		:around
-		#'svelte--pug-compute-indentation-advice)
-    
-    (svelte--mark-buffer-locals svelte--pug-submode)
-    (svelte--mark-crucial-buffer-locals svelte--pug-submode)
-    (setq svelte--crucial-variables (delete-dups svelte--crucial-variables))))
-  
-
-;;; Coffee mode
-(defun svelte--load-coffee-submode ()
-  "Load `coffee-mode' and patch it."
-  (when (require 'coffee-mode nil t)
-    (customize-set-variable 'coffee-tab-width svelte-basic-offset)
-    (defconst svelte--coffee-submode
-      (svelte--construct-submode 'coffee-mode
-				 :name "Coffee"
-				 :end-tag "</script>"
-				 :syntax-table coffee-mode-syntax-table
-				 :keymap coffee-mode-map))))
-
-;;; TypeScript mode
-(defun svelte--load-typescript-submode ()
-  "Load `typescript-mode' and patch it."
-  (when (require 'typescript-mode nil t)
-    (customize-set-variable 'typescript-indent-level svelte-basic-offset)
-    (defconst svelte--typescript-submode
-      (svelte--construct-submode 'typescript-mode
-                                 :name "TypeScript"
-                                 :end-tag "</script>"
-                                 :syntax-table typescript-mode-syntax-table
-                                 :propertize #'typescript-syntax-propertize
-                                 :indent-function #'js-indent-line
-                                 :keymap typescript-mode-map))))
 
 ;;; Emmet mode
 (defun svelte--emmet-detect-style-tag-and-attr-advice (orig-fun &rest args)
