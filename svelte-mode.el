@@ -45,6 +45,9 @@
 (defvar svelte--coffee-submode)
 (defvar coffee-mode-syntax-table)
 (defvar coffee-mode-map)
+(defvar svelte--typescript-submode)
+(defvar typescript-mode-syntax-table)
+(defvar typescript-mode-map)
 (defvar emmet-use-style-tag-and-attr-detection)
 
 (defvar svelte-block-re "\\({[#:/]\\).*\\(}\\)$" "Block regexp.")
@@ -91,6 +94,15 @@
 	    (svelte--load-coffee-submode))
 	  (when (boundp 'svelte--coffee-submode)
 	    (svelte--syntax-propertize-submode svelte--coffee-submode end))))))
+   ("<script.*ts.*>"
+    (0 (ignore
+        (goto-char (match-end 0))
+        ;; Don't apply in a comment.
+        (unless (syntax-ppss-context (syntax-ppss))
+          (unless (boundp 'svelte--typescript-submode)
+            (svelte--load-typescript-submode))
+          (when (boundp 'svelte--typescript-submode)
+            (svelte--syntax-propertize-submode svelte--typescript-submode end))))))
    ("<style.*?>"
     (0 (ignore
         (goto-char (match-end 0))
@@ -601,6 +613,18 @@ Ignore ORIG-FUN and ARGS."
 				 :end-tag "</script>"
 				 :syntax-table coffee-mode-syntax-table
 				 :keymap coffee-mode-map))))
+
+;;; TypeScript mode
+(defun svelte--load-typescript-submode ()
+  "Load `typescript-mode' and patch it."
+  (when (require 'typescript-mode nil t)
+    (customize-set-variable 'typescript-indent-level svelte-basic-offset)
+    (defconst svelte--typescript-submode
+      (svelte--construct-submode 'typescript-mode
+                                 :name "TypeScript"
+                                 :end-tag "</script>"
+                                 :syntax-table typescript-mode-syntax-table
+                                 :keymap typescript-mode-map))))
 
 ;;; Emmet mode
 (defun svelte--emmet-detect-style-tag-and-attr-advice (orig-fun &rest args)
