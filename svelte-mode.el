@@ -159,6 +159,7 @@ code();
   end-tag 		; HTML end tag.
   syntax-table          ; Syntax table.
   propertize            ; Propertize function.
+  indent-function       ; Indent function that overrides the submode one
   keymap                ; Keymap.
   ;; Captured locals that are set when entering a region.
   crucial-captured-locals
@@ -362,7 +363,8 @@ This is used by `svelte--pre-command'.")
               (svelte--with-locals submode
                 ;; indent-line-function was rebound by
                 ;; svelte--with-locals.
-                (funcall indent-line-function)))))
+                (funcall (or (svelte--submode-indent-function submode)
+                             indent-line-function))))))
       ;; HTML.
       (svelte-html-indent-line))))
 
@@ -624,6 +626,8 @@ Ignore ORIG-FUN and ARGS."
                                  :name "TypeScript"
                                  :end-tag "</script>"
                                  :syntax-table typescript-mode-syntax-table
+                                 :propertize #'typescript-syntax-propertize
+                                 :indent-function #'js-indent-line
                                  :keymap typescript-mode-map))))
 
 ;;; Emmet mode
