@@ -176,7 +176,9 @@ code();
   "Regexp matching the prefix of \"crucial\" buffer-locals we want to capture.")
 
 (defconst svelte--variable-prefix
-  (regexp-opt '("font-lock-" "indent-line-function"))
+  (regexp-opt '("font-lock-"
+                "indent-line-function"
+                "typescript--"))
   "Regexp matching the prefix of buffer-locals we want to capture.")
 
 (defun svelte--construct-submode (mode &rest args)
@@ -194,16 +196,17 @@ code();
         (setq-local font-lock-fontify-region-function
                     #'font-lock-default-fontify-region))
       (dolist (iter (buffer-local-variables))
-	(when (string-match svelte--crucial-variable-prefix
-                            (symbol-name (car iter)))
-          (push iter crucial-captured-locals))
-        (when (string-match svelte--variable-prefix (symbol-name (car iter)))
-	  (unless (member (car iter)
-			  (svelte--submode-excluded-locals submode))
-	    (push iter captured-locals))))
+        (let ((variable-name (symbol-name (car iter))))
+          (when (string-match svelte--crucial-variable-prefix variable-name)
+            (push iter crucial-captured-locals))
+          (when (string-match svelte--variable-prefix variable-name)
+            (unless (member (car iter)
+                            (svelte--submode-excluded-locals submode))
+              (push iter captured-locals)))))
       (setf (svelte--submode-crucial-captured-locals submode)
             crucial-captured-locals)
-      (setf (svelte--submode-captured-locals submode) captured-locals))
+      (setf (svelte--submode-captured-locals submode) 
+            captured-locals))
     submode))
 
 (defun svelte--mark-buffer-locals (submode)
@@ -576,8 +579,7 @@ If LOUDLY is non-nil, print status message while fontifying."
 				 :name "Pug"
 				 :end-tag "</template>"
 				 :syntax-table pug-mode-syntax-table
-				 :excluded-locals
-				 '(font-lock-extend-region-functions)
+				 :excluded-locals '(font-lock-extend-region-functions)
 				 :keymap pug-mode-map))
 
     (defun svelte--pug-compute-indentation-advice (orig-fun &rest args)
