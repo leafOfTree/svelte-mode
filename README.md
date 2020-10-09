@@ -61,10 +61,11 @@ Or customize variable programatically, like
 (customize-set-variable 'svelte-basic-offset 2)
 ```
 
-| name                       | description                                                       | default           |
-|----------------------------|-------------------------------------------------------------------|-------------------|
-| svelte-basic-offset        | Specifies the basic indentation level.                            | sgml-basic-offset |
-| svelte-tag-relative-indent | Whether `<script>` and `<style>` bodies indent to the tag.        | t                 |
+| name                        | description                                                       | default           |
+|-----------------------------|-------------------------------------------------------------------|-------------------|
+| svelte-basic-offset         | Specifies the basic indentation level.                            | sgml-basic-offset |
+| svelte-tag-relative-indent  | Whether `<script>` and `<style>` bodies indent to the tag.        | t                 |
+| svelte-display-submode-name | Whether to display submode name in the status line.               | nil               |
 
 
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el

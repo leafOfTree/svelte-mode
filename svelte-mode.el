@@ -155,7 +155,7 @@ code();
   :version "26.1")
 
 (defcustom svelte-display-submode-name nil
-  "Whether display submode name in the status line."
+  "Whether to display submode name in the status line."
   :group 'sgml
   :type '(choice (const nil) (const t))
   :safe 'symbolp
