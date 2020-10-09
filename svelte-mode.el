@@ -154,12 +154,19 @@ code();
   :safe 'symbolp
   :version "26.1")
 
+(defcustom svelte-display-submode-name nil
+  "Whether display submode name in the status line."
+  :group 'sgml
+  :type '(choice (const nil) (const t))
+  :safe 'symbolp
+  :version "26.1")
+
 (cl-defstruct svelte--submode
   name 			; Name of this submode.
   end-tag 		; HTML end tag.
   syntax-table          ; Syntax table.
   propertize            ; Propertize function.
-  indent-function       ; Indent function that overrides the submode one
+  indent-function       ; Indent function that overrides the submode one.
   keymap                ; Keymap.
   ;; Captured locals that are set when entering a region.
   crucial-captured-locals
@@ -328,6 +335,12 @@ Ignore ORIG-FUN and ARGS."
         (svelte--submode-name submode)
       nil)))
 
+(defun svelte--get-mode-name ()
+  "Get mode name for the status line"
+  (if svelte-display-submode-name
+      (concat "Svelte/" (or (svelte--submode-lighter) "HTML"))
+    "Svelte"))
+
 (defvar-local svelte--last-submode nil
   "Record the last visited submode.
 This is used by `svelte--pre-command'.")
@@ -445,7 +458,7 @@ This is used by `svelte--pre-command'.")
 	 (indent-col
 	  (save-excursion
 	    (back-to-indentation)
-	    (if (>= (point) savep) (setq savep nil))
+	    (when (>= (point) savep) (setq savep nil))
 	    (sgml-calculate-indent))))
     (when block-offset
       (save-excursion
@@ -674,7 +687,7 @@ Called by `unload-feature'."
 
 ;;;###autoload
 (define-derived-mode svelte-mode html-mode
-  "Svelte"
+  '((:eval (svelte--get-mode-name)))
   "Major mode based on `html-mode', but works with embedded JS and CSS.
 
 Code inside a <script> element is indented using the rules from
