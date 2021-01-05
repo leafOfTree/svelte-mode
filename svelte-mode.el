@@ -667,7 +667,6 @@ Ignore ORIG-FUN and ARGS."
 
 
 ;;; Flyspell
-
 (defun svelte--flyspell-check-word ()
   "Flyspell check word."
   (let ((submode (get-text-property (point) 'svelte-submode)))
@@ -684,6 +683,13 @@ Called by `unload-feature'."
 
   (advice-remove 'pug-compute-indentation
 		 #'svelte--pug-compute-indentation-advice))
+
+(defun svelte--setup-company-for-spacemacs ()
+  "Setup company for spacemacs"
+  (spacemacs|add-company-backends :backends (company-web-html company-css company-files company-dabbrev)
+                                  :modes svelte-mode
+                                  :variables company-minimum-prefix-length 2)
+  (company-mode))
 
 ;;;###autoload
 (define-derived-mode svelte-mode html-mode
@@ -715,13 +721,15 @@ the rules from `css-mode'."
   (svelte--mark-crucial-buffer-locals svelte--js-submode)
   (setq svelte--crucial-variables (delete-dups svelte--crucial-variables))
 
-  ;: Hack
+  ;; Hack
   (js--update-quick-match-re)
 
+  ;; Integrate other packages
   (advice-add
    'emmet-detect-style-tag-and-attr
    :around
    #'svelte--emmet-detect-style-tag-and-attr-advice)
+  (add-hook 'svelte-mode-local-vars-hook #'svelte--setup-company-for-spacemacs)
 
   ;; This is sort of a prog-mode as well as a text mode.
   (run-hooks 'prog-mode-hook))
