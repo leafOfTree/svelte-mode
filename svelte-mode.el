@@ -729,7 +729,8 @@ the rules from `css-mode'."
    'emmet-detect-style-tag-and-attr
    :around
    #'svelte--emmet-detect-style-tag-and-attr-advice)
-  (add-hook 'svelte-mode-local-vars-hook #'svelte--setup-company-for-spacemacs)
+  (when (boundp 'spacemacs-version)
+    (add-hook 'svelte-mode-local-vars-hook #'svelte--setup-company-for-spacemacs))
 
   ;; This is sort of a prog-mode as well as a text mode.
   (run-hooks 'prog-mode-hook))
