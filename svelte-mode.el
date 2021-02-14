@@ -472,7 +472,8 @@ This is used by `svelte--pre-command'.")
 
 (defun svelte--html-block-offset ()
   "Indentation offset of Svelte blocks like {#if...}, {#each...}."
-  (cond ((or (svelte--previous-block "beginning"))
+  (cond ((or (svelte--previous-block "beginning")
+	     (svelte--previous-block "middle"))
          svelte-basic-offset)
         ((or (svelte--current-block "middle")
              (svelte--current-block "end")
