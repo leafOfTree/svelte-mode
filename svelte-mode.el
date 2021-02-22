@@ -464,7 +464,7 @@ This is used by `svelte--pre-command'.")
       (save-excursion
 	(forward-line -1)
 	(setq indent-col (+ block-offset (current-indentation)))))
-    (if (null indent-col)
+    (if (or (null indent-col) (< indent-col 0))
 	'noindent
       (if savep
 	  (save-excursion (indent-line-to indent-col))
