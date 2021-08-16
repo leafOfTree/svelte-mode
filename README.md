@@ -71,3 +71,36 @@ Or customize variable programatically, like
 [0]: https://github.com/emacs-mirror/emacs/blob/master/lisp/textmodes/mhtml-mode.el
 [1]: https://github.com/syl20bnr/spacemacs
 [2]: https://melpa.org/#/svelte-mode
+
+## Configuration hacks
+
+### Closing tags for components with "reserved" names
+SGML mode, which `svelte-mode` is derived from, automatically closes your current tag for you with the `C-c C-e` shortcut
+(`sgml-close-tag`). This however does not work for components that share their name with unclosed html tags, like for example
+the `Link` component from `svelte-routing`. SGML mode by default checks whether tags are supposed to be closed or not by comparing
+tag names with lists of element names case-insensitively, so `<Link>` is equivalent to `<link>`. The following configuration snippet 
+makes the comparison of tag names by SGML mode case-sensitive when svelte-mode is the current active major-mode in the buffer. Just
+add it to your config file and you're good to go.
+
+```elisp
+(defun svelte-mode-sgml-empty-tag-p-advice (old-function tag-name)
+  "Advice function intended to wrap around `sgml-empty-tag-p
+
+Makes case significant when checking whether tags need to be
+closed or not, to not confuse elements with Svelte components."
+  (if (eq major-mode 'svelte-mode)
+      (assoc-string tag-name sgml-empty-tags)
+    (funcall old-function tag-name)))
+
+(defun svelte-mode-sgml-unclosed-tag-p-advice (old-function tag-name)
+  "Advice function intended to wrap around `sgml-unclosed-tag-p
+
+Makes case significant when checking whether tags need to be
+closed or not, to not confuse elements with Svelte components."
+  (if (eq major-mode 'svelte-mode)
+      (assoc-string tag-name sgml-unclosed-tags)
+    (funcall old-function tag-name)))
+
+(advice-add 'sgml-empty-tag-p :around 'svelte-mode-sgml-empty-tag-p-advice)
+(advice-add 'sgml-unclosed-tag-p :around 'svelte-mode-sgml-unclosed-tag-p-advice)
+```
