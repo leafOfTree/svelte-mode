@@ -79,7 +79,7 @@ SGML mode, which `svelte-mode` is derived from, automatically closes your curren
 (`sgml-close-tag`). This however does not work for components that share their name with unclosed html tags, like for example
 the `Link` component from `svelte-routing`. SGML mode by default checks whether tags are supposed to be closed or not by comparing
 tag names with lists of element names case-insensitively, so `<Link>` is equivalent to `<link>`. The following configuration snippet 
-makes the comparison of tag names by SGML mode case-insensitive when svelte-mode is the current active major-mode in the buffer. Just
+makes the comparison of tag names by SGML mode case-sensitive when svelte-mode is the current active major-mode in the buffer. Just
 add it to your config file and you're good to go.
 
 ```elisp
