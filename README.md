@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/leafOfTree/leafOfTree.github.io/master/svelte-mode.svg" width="60" height="60" alt="icon" align="left"/>
+
 # svelte-mode
 
 <p align="center">
