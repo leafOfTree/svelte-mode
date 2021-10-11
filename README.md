@@ -51,6 +51,7 @@ Supports
 - Emmet-mode HTML/CSS detection.
 - Pug-mode in `<template lang="pug">...</template>`.
 - Coffee-mode in `<script lang="coffee">...</script>`.
+- Sass-mode in `<style lang="sass">...</style>`.
 
 > Relative modes need to be installed.
 
