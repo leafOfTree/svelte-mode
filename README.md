@@ -57,12 +57,13 @@ Supports
 
 ## Customize
 
-See detail by <kbd>M-x</kbd> `describe-variable` <kbd>RET</kbd> `<variable-name>` <kbd>RET</kbd>. Use `Customize` instead of `Set` in the GUI.
+<kbd>M-x</kbd> `customize-set-variable` <kbd>RET</kbd> `<variable-name>` <kbd>RET</kbd> 
 
 Or customize variable programatically, like
 ```lisp
 (customize-set-variable 'svelte-basic-offset 2)
 ```
+See detail by <kbd>M-x</kbd> `describe-variable` <kbd>RET</kbd> `<variable-name>` <kbd>RET</kbd>.
 
 | name                        | description                                                       | default           |
 |-----------------------------|-------------------------------------------------------------------|-------------------|
