@@ -190,14 +190,22 @@ code();
    () :documentation "Local variables that are not to be captured."))
 
 (defconst svelte--crucial-variable-prefix
-  (regexp-opt '("comment-" "uncomment-" "electric-indent-"
-                "smie-" "forward-sexp-function" "completion-" "major-mode"))
+  (regexp-opt '("comment-"
+                "uncomment-"
+                "electric-indent-"
+                "smie-"
+                "forward-sexp-function"
+                "completion-"
+                "major-mode"
+                ))
   "Regexp matching the prefix of \"crucial\" buffer-locals we want to capture.")
 
 (defconst svelte--variable-prefix
   (regexp-opt '("font-lock-"
                 "indent-line-function"
-                "typescript--"))
+                "typescript--"
+                "haml-"
+                ))
   "Regexp matching the prefix of buffer-locals we want to capture.")
 
 (defun svelte--construct-submode (mode &rest args)
