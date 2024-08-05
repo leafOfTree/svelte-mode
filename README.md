@@ -48,12 +48,13 @@ This major mode includes `JavaScript/CSS` as `submode` in `html-mode`.
 Supports
 
 - Svelte directives and blocks.
-- Emmet-mode HTML/CSS detection.
-- Pug-mode in `<template lang="pug">...</template>`.
-- Coffee-mode in `<script lang="coffee">...</script>`.
-- Sass-mode in `<style lang="sass">...</style>`.
+- emmet-mode HTML/CSS detection.
+- pug-mode in `<template lang="pug">...</template>`.
+- typescript-mode in `<script lang="ts">...</script>`
+- coffee-mode in `<script lang="coffee">...</script>`.
+- sass-mode in `<style lang="sass">...</style>`.
 
-> Relative modes need to be installed.
+These modes need to be **installed** first.
 
 ## Customize
 
