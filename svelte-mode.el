@@ -61,7 +61,7 @@
 (defvar svelte-directive-prefix-re
   (concat (regexp-opt svelte--directive-prefix) ":[^=/> ]+")
   "Directive prefixes regexp.")
-(defvar svelte--block-keywords '("if" "else" "each" "await" "then" "catch" "as")
+(defvar svelte--block-keywords '("if" "else" "each" "await" "then" "catch" "as" "key")
   "Block keywords.")
 (defvar svelte--font-lock-html-keywords
   `((,svelte-block-re
