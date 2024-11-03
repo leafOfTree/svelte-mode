@@ -49,12 +49,13 @@ Supports
 
 - Svelte directives and blocks.
 - emmet-mode HTML/CSS detection.
-- pug-mode in `<template lang="pug">...</template>`.
-- typescript-mode in `<script lang="ts">...</script>`
-- coffee-mode in `<script lang="coffee">...</script>`.
-- sass-mode in `<style lang="sass">...</style>`.
+- `typescript-mode` in `<script lang="ts">...</script>`
+- `sass-mode` in `<style lang="sass">...</style>`.
+- `pug-mode` in `<template lang="pug">...</template>`.
+- `coffee-mode` in `<script lang="coffee">...</script>`.
 
-These modes need to be **installed** first.
+> [!IMPORTANT]
+> You need to **install** these modes first.
 
 ## Customize
 
