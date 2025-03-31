@@ -10,6 +10,9 @@
 
 Emacs major mode for `.svelte` files. It's based on [mhtml-mode][0]. It requires `(>= emacs-major-version 26)`.
 
+> [!TIP]
+> For tree-sitter major mode,  you can check [svelte-ts-mode](https://github.com/leafOfTree/svelte-ts-mode).
+
 ## Installation
 
 - [MELPA][2]
