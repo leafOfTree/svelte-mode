@@ -58,6 +58,7 @@
 (defvar syntax-ppss-narrow-start)
 (defvar syntax-ppss-cache)
 (defvar syntax-ppss-last)
+(defvar syntax-propertize--done)
 
 (defvar svelte-block-re "\\({[#:/]\\).*\\(}\\)$" "Block regexp.")
 (defvar svelte-expression-re "\\({\\)[^}]+\\(}\\)" "Expression regexp.")
@@ -502,7 +503,11 @@ end instead.  The syntax table is set explicitly as
 
 END is extended to the end of that expression.  Return nil if
 there is nothing to extend."
-  (let ((open (svelte--expression-open-brace start)))
+  ;; Text before START is propertized.  Avoid propertizing again, which
+  ;; recurses before Emacs 29 as `syntax-propertize' doesn't bind it
+  ;; when calling `syntax-propertize-extend-region-functions'.
+  (let* ((syntax-propertize--done most-positive-fixnum)
+         (open (svelte--expression-open-brace start)))
     (when (and open (< open start))
       (cons open
             (max end
