@@ -390,9 +390,13 @@ This is used by `svelte--pre-command'.")
                 svelte--crucial-variables)))
 
 (defun svelte--map-in-crucial-variables (alist)
-  "Set all crucial variables in ALIST."
+  "Set all crucial variables in ALIST.
+
+`major-mode' is kept as `svelte-mode' so tools like eglot don't
+take the buffer as JS or CSS inside <script> or <style>."
   (dolist (item alist)
-    (set (car item) (cdr item))))
+    (unless (eq (car item) 'major-mode)
+      (set (car item) (cdr item)))))
 
 (defun svelte--pre-command ()
   "Run pre- and post-hook for each command if current submode is changed."
