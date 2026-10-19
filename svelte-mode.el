@@ -53,6 +53,11 @@
 (defvar typescript-mode-syntax-table)
 (defvar typescript-mode-map)
 (defvar emmet-use-style-tag-and-attr-detection)
+(defvar syntax-ppss-wide)
+(defvar syntax-ppss-narrow)
+(defvar syntax-ppss-narrow-start)
+(defvar syntax-ppss-cache)
+(defvar syntax-ppss-last)
 
 (defvar svelte-block-re "\\({[#:/]\\).*\\(}\\)$" "Block regexp.")
 (defvar svelte-expression-re "\\({\\)[^}]+\\(}\\)" "Expression regexp.")
@@ -462,21 +467,39 @@ quote rule may skip over `{'."
                    (re-search-backward "<\\(/\\)?\\(script\\|style\\)\\b" nil t))
                  (not (match-beginning 1)))
         (search-forward (concat "</" (match-string 2) ">") end 'move))
-      (while (re-search-forward "{\\|<\\(script\\|style\\)\\b" end t)
+      ;; An expression may end after END.
+      (while (and (< (point) end)
+                  (re-search-forward "{\\|<\\(script\\|style\\)\\b" end t))
         (if (match-beginning 1)
             (search-forward (concat "</" (match-string 1) ">") end 'move)
           (svelte--syntax-propertize-expression (match-beginning 0)))))))
+
+(defun svelte--expression-open-brace (pos)
+  "Return the `{' of the outermost expression containing POS, or nil.
+
+Only the html section is considered.  `syntax-ppss' isn't used as
+`syntax-ppss-table' only knows tags, so parse from the previous tag
+end instead.  The syntax table is set explicitly as
+`syntax-propertize' binds it to `syntax-ppss-table'."
+  (unless (get-text-property pos 'svelte-submode)
+    (with-syntax-table svelte-mode-syntax-table
+      (save-excursion
+        (goto-char pos)
+        (let ((from (point-min)))
+          (while (and (re-search-backward ">" nil t)
+                      (not (eq (syntax-class (syntax-after (point))) 5))))
+          (when (eq (char-after) ?>)
+            (setq from (1+ (point))))
+          (seq-find (lambda (open) (eq (char-after open) ?{))
+                    (nth 9 (parse-partial-sexp from pos))))))))
 
 (defun svelte--syntax-propertize-extend-region (start end)
   "Extend START back to `{' if it is inside an expression in the html section.
 
 END is extended to the end of that expression.  Return nil if
 there is nothing to extend."
-  (let ((open (seq-find (lambda (pos) (eq (char-after pos) ?{))
-                        (nth 9 (save-excursion (syntax-ppss start))))))
-    (when (and open
-               (< open start)
-               (not (get-text-property open 'svelte-submode)))
+  (let ((open (svelte--expression-open-brace start)))
+    (when (and open (< open start))
       (cons open
             (max end
                  (save-excursion
@@ -536,8 +559,31 @@ there is nothing to extend."
                 ;; svelte--with-locals.
                 (funcall (or (svelte--submode-indent-function submode)
                              indent-line-function))))))
-      ;; HTML.
-      (svelte-html-indent-line))))
+      (let ((expression-start
+             (svelte--expression-open-brace (line-beginning-position))))
+        (if expression-start
+            ;; JS expression in HTML, like on:click={() => ...}.
+            (svelte--indent-expression-line expression-start)
+          ;; HTML.
+          (svelte-html-indent-line))))))
+
+(defun svelte--indent-expression-line (start)
+  "Indent current line by JS rules in the expression starting at START."
+  (save-restriction
+    (narrow-to-region (save-excursion
+                        (goto-char start)
+                        (line-beginning-position))
+                      (point-max))
+    ;; Use the buffer syntax table, not the tag only `syntax-ppss-table',
+    ;; with a separate `syntax-ppss' cache.
+    (let ((syntax-ppss-table nil)
+          (syntax-ppss-wide nil)
+          (syntax-ppss-narrow nil)
+          (syntax-ppss-narrow-start nil)
+          (syntax-ppss-cache nil)
+          (syntax-ppss-last nil))
+      (svelte--with-locals svelte--js-submode
+        (js-indent-line)))))
 
 (defun svelte-html-indent-line ()
   "Indent HTML within Svelte."
@@ -739,6 +785,41 @@ If LOUDLY is non-nil, print status message while fontifying."
               (/= orig-end new-end))
       (cons 'jit-lock-bounds (cons new-beg new-end)))))
 
+;;; Imenu
+(defun svelte-imenu-index ()
+  "Return an index of headings like `html-imenu-index'.
+
+The heading text may span lines and contain tags.  Headings without
+text are skipped as empty names make an invalid index."
+  ;; Set `svelte-submode' to skip <script> and <style>.
+  (syntax-propertize (point-max))
+  (let (index)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "<h\\([1-6]\\)\\b[^>]*>" nil t)
+        (let ((level (string-to-number (match-string 1)))
+              (beg (match-end 0))
+              (pos (line-beginning-position)))
+          (unless (or (get-text-property beg 'svelte-submode)
+                      (nth 4 (save-excursion (syntax-ppss beg))))
+            (let* ((end (save-excursion
+                          (if (re-search-forward
+                               (format "</h%d\\s-*>" level) nil t)
+                              (match-beginning 0)
+                            (line-end-position))))
+                   (text (string-trim
+                          (replace-regexp-in-string
+                           "[ \t\n]+" " "
+                           (replace-regexp-in-string
+                            "<[^>]*>" ""
+                            (buffer-substring-no-properties beg end))))))
+              (unless (string-empty-p text)
+                (push (cons (concat (make-string (* 2 (1- level)) ?\s)
+                                    text)
+                            pos)
+                      index)))))))
+    (nreverse index)))
+
 ;;; Emmet mode
 (defun svelte--emmet-detect-style-tag-and-attr-advice (orig-fun &rest args)
   "Detect style tag begin as `<style'.
@@ -804,6 +885,8 @@ the rules from `css-mode'."
   (add-hook 'post-command-hook #'svelte--pre-command nil t)
 
   (font-lock-add-keywords 'svelte-mode svelte--font-lock-html-keywords)
+
+  (setq-local imenu-create-index-function #'svelte-imenu-index)
 
   ;; Make any captured variables buffer-local.
   (svelte--mark-buffer-locals svelte--css-submode)
