@@ -113,3 +113,14 @@ closed or not, to not confuse elements with Svelte components."
 (advice-add 'sgml-empty-tag-p :around 'svelte-mode-sgml-empty-tag-p-advice)
 (advice-add 'sgml-unclosed-tag-p :around 'svelte-mode-sgml-unclosed-tag-p-advice)
 ```
+
+## Tests
+
+Run tests and byte compile with
+
+```sh
+make test
+make compile
+```
+
+Tests are in [test/svelte-mode-test.el](test/svelte-mode-test.el). They also run on GitHub Actions with Emacs 27 and 29 for each push and pull request.
