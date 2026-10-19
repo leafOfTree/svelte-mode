@@ -29,6 +29,7 @@
 (require 'css-mode)
 (require 'prog-mode)
 (require 'subr-x)
+(require 'seq)
 
 (declare-function flyspell-generic-progmode-verify "ext:flyspell")
 (declare-function emmet-check-if-between "ext:emmet-mode")
@@ -427,6 +428,60 @@ This is used by `svelte--pre-command'.")
     (funcall (svelte--submode-propertize submode) (point) end))
   (goto-char end))
 
+(defun svelte--syntax-propertize-expression (beg &optional move-only)
+  "Give `<' and `>' punctuation syntax in the expression starting at BEG.
+
+Otherwise `>' in `=>' or `a > b' is seen as the closing bracket of
+`{'.  Move point to the end of the expression.  If MOVE-ONLY is
+non-nil, only move point."
+  (goto-char (1+ beg))
+  (let ((depth 1)
+        (quote nil))
+    (while (and (> depth 0) (not (eobp)))
+      (let ((char (char-after)))
+        (cond (quote
+               (cond ((eq char ?\\) (forward-char))
+                     ((eq char quote) (setq quote nil))))
+              ((memq char '(?\" ?' ?`)) (setq quote char))
+              ((eq char ?{) (cl-incf depth))
+              ((eq char ?}) (cl-decf depth))))
+      (when (and (not move-only) (memq (char-after) '(?< ?>)))
+        (put-text-property (point) (1+ (point))
+                           'syntax-table (string-to-syntax ".")))
+      (forward-char))))
+
+(defun svelte--syntax-propertize-expressions (start end)
+  "Propertize expressions like {() => a > b} between START and END.
+
+Skip <script> and <style>.  This runs before the sgml rules, whose
+quote rule may skip over `{'."
+  (save-excursion
+    (goto-char start)
+    (let ((case-fold-search t))
+      (when (and (save-excursion
+                   (re-search-backward "<\\(/\\)?\\(script\\|style\\)\\b" nil t))
+                 (not (match-beginning 1)))
+        (search-forward (concat "</" (match-string 2) ">") end 'move))
+      (while (re-search-forward "{\\|<\\(script\\|style\\)\\b" end t)
+        (if (match-beginning 1)
+            (search-forward (concat "</" (match-string 1) ">") end 'move)
+          (svelte--syntax-propertize-expression (match-beginning 0)))))))
+
+(defun svelte--syntax-propertize-extend-region (start end)
+  "Extend START back to `{' if it is inside an expression in the html section.
+
+END is extended to the end of that expression.  Return nil if
+there is nothing to extend."
+  (let ((open (seq-find (lambda (pos) (eq (char-after pos) ?{))
+                        (nth 9 (save-excursion (syntax-ppss start))))))
+    (when (and open
+               (< open start)
+               (not (get-text-property open 'svelte-submode)))
+      (cons open
+            (max end
+                 (save-excursion
+                   (svelte--syntax-propertize-expression open t)
+                   (point)))))))
 
 (defun svelte-syntax-propertize (start end)
   "Svelte syntax propertize function for text between START and END."
@@ -436,6 +491,7 @@ This is used by `svelte--pre-command'.")
   (remove-list-of-text-properties start
                                   end
                                   '(syntax-table local-map svelte-submode))
+  (svelte--syntax-propertize-expressions start end)
   (goto-char start)
   (when (= emacs-major-version 26)
     ;; Be sure to look back one character, because START won't yet have
@@ -735,6 +791,8 @@ Code inside a <script> element is indented using the rules from
 the rules from `css-mode'."
   (setq-local indent-line-function #'svelte-indent-line)
   (setq-local syntax-propertize-function #'svelte-syntax-propertize)
+  (add-hook 'syntax-propertize-extend-region-functions
+            #'svelte--syntax-propertize-extend-region nil t)
   (setq-local font-lock-fontify-region-function
               #'svelte--submode-fontify-region)
   (setq-local font-lock-extend-region-functions
